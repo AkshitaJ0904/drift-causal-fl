@@ -1,0 +1,31 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+======================================================================
+DAY 3/4 — dropout mechanisms tested against REAL drift scores
+======================================================================
+Generating partition_id_to_indices: 0it [00:00, ?it/s]Generating partition_id_to_indices: 423937it [00:00, 4239202.22it/s]Generating partition_id_to_indices: 814277it [00:00, 4507180.82it/s]
+[data] Loaded dataset: FEMNIST (real, writer-partitioned) (40 clients, 62 classes)
+[data] D_indep at round 2: min=0.0000 max=0.0139 mean=0.0054 std=0.0066
+[data] 16/40 clients actively drifting at this round
+
+--- Check 1: marginal dropout rate stays matched across mechanisms ---
+Target rate: 0.30
+
+MCAR:              realized dropout rate = 0.3650 (+/- 0.0682)
+MAR (gamma=2.0):   realized dropout rate = 0.3050 (+/- 0.0534)
+
+MNAR-logistic, sweeping beta:
+  beta= 0.0:  realized dropout rate = 0.3200  |  realized rho(D, dropout) = +0.0662
+  beta= 0.5:  realized dropout rate = 0.3300  |  realized rho(D, dropout) = +0.2919
+  beta= 1.0:  realized dropout rate = 0.3150  |  realized rho(D, dropout) = +0.4787
+  beta= 2.0:  realized dropout rate = 0.2950  |  realized rho(D, dropout) = +0.6578
+  beta= 4.0:  realized dropout rate = 0.3150  |  realized rho(D, dropout) = +0.6993
+  beta= 8.0:  realized dropout rate = 0.3150  |  realized rho(D, dropout) = +0.6993
+
+--- Check 2: does rho climb monotonically with beta? ---
+rho sequence: [np.float64(0.066), np.float64(0.292), np.float64(0.479), np.float64(0.658), np.float64(0.699), np.float64(0.699)]
+Monotonically non-decreasing: YES
+
+--- Threshold mechanism (robustness check) ---
+threshold: realized dropout rate = 0.3250  |  realized rho(D, dropout) = +0.7498
+======================================================================
+PASS conditions: (1) all realized rates land near 0.3 (2) rho climbs with beta (3) rho stays 0 for MCAR/MAR, clearly nonzero for MNAR/threshold.

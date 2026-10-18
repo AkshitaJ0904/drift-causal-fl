@@ -1,0 +1,22 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+======================================================================
+DAY 1 — trustworthy full-participation FedAvg baseline
+======================================================================
+Generating partition_id_to_indices: 0it [00:00, ?it/s]Generating partition_id_to_indices: 432072it [00:00, 4320466.60it/s]Generating partition_id_to_indices: 814277it [00:00, 4507710.26it/s]
+[data] Loaded dataset: FEMNIST (real, writer-partitioned) (40 clients, 62 classes)
+[data] 40 clients | 7153 train samples | 1770 test samples
+[round   1/40] test accuracy = 0.0548  (elapsed 11.3s)
+[round   4/40] test accuracy = 0.0548  (elapsed 262.0s)
+[round   8/40] test accuracy = 0.3633  (elapsed 358.5s)
+[round  12/40] test accuracy = 0.5085  (elapsed 398.3s)
+[round  16/40] test accuracy = 0.6198  (elapsed 440.8s)
+[round  20/40] test accuracy = 0.6712  (elapsed 481.3s)
+[round  24/40] test accuracy = 0.6565  (elapsed 522.0s)
+[round  28/40] test accuracy = 0.7102  (elapsed 562.5s)
+[round  32/40] test accuracy = 0.7186  (elapsed 606.2s)
+[round  36/40] test accuracy = 0.7277  (elapsed 1873.8s)
+[round  40/40] test accuracy = 0.5621  (elapsed 5676.1s)
+[log] wrote results/day1_femnist_v2.json
+======================================================================
+RESULT: dataset=FEMNIST (real, writer-partitioned) | final accuracy after 40 rounds = 0.5621
+======================================================================

@@ -1,0 +1,5 @@
+torch>=2.0
+torchvision>=0.15
+numpy>=1.24
+flwr>=1.37
+flwr-datasets>=0.6

@@ -1,0 +1,68 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+======================================================================
+DAY 5 — FedAvg vs FedIPW-oracle vs FedIPW-estimated, under MCAR vs MNAR
+======================================================================
+Generating partition_id_to_indices: 0it [00:00, ?it/s]Generating partition_id_to_indices: 430466it [00:00, 4304438.33it/s]Generating partition_id_to_indices: 814277it [00:00, 4558556.56it/s]
+[data] Loaded dataset: FEMNIST (real, writer-partitioned) (25 clients, 62 classes)
+Generating partition_id_to_indices: 0it [00:00, ?it/s]Generating partition_id_to_indices: 189982it [00:00, 1899726.70it/s]Generating partition_id_to_indices: 613649it [00:00, 3274272.24it/s]Generating partition_id_to_indices: 814277it [00:00, 3326838.04it/s]
+[drift] mode=label_shift (real-writer label shift, no pixel corruption)
+
+--- MCAR + fedavg ---
+[mcar round   1/25] acc=0.0572  participants=22/25  rho=+0.000  drifting_participated=0/0
+[mcar round   5/25] acc=0.1394  participants=19/25  rho=-0.137  drifting_participated=7/10
+[mcar round  10/25] acc=0.2041  participants=17/25  rho=-0.038  drifting_participated=5/10
+[mcar round  15/25] acc=0.4247  participants=20/25  rho=-0.095  drifting_participated=9/10
+[mcar round  20/25] acc=0.5531  participants=20/25  rho=+0.168  drifting_participated=7/10
+[mcar round  25/25] acc=0.6270  participants=19/25  rho=-0.076  drifting_participated=8/10
+
+--- MCAR + fedipw_oracle ---
+[mcar round   1/25] acc=0.0572  participants=22/25  rho=+0.000  drifting_participated=0/0
+[mcar round   5/25] acc=0.1394  participants=19/25  rho=-0.137  drifting_participated=7/10
+[mcar round  10/25] acc=0.2041  participants=17/25  rho=-0.038  drifting_participated=5/10
+[mcar round  15/25] acc=0.4247  participants=20/25  rho=-0.095  drifting_participated=9/10
+[mcar round  20/25] acc=0.5531  participants=20/25  rho=+0.168  drifting_participated=7/10
+[mcar round  25/25] acc=0.6270  participants=19/25  rho=-0.076  drifting_participated=8/10
+
+--- MCAR + fedipw_estimated ---
+[mcar round   1/25] acc=0.0572  participants=22/25  rho=+0.000  drifting_participated=0/0
+[mcar round   5/25] acc=0.0471  participants=19/25  rho=-0.137  drifting_participated=7/10
+[mcar round  10/25] acc=0.1173  participants=17/25  rho=-0.038  drifting_participated=5/10
+[mcar round  15/25] acc=0.3518  participants=20/25  rho=-0.095  drifting_participated=9/10
+[mcar round  20/25] acc=0.5171  participants=20/25  rho=+0.168  drifting_participated=7/10
+[mcar round  25/25] acc=0.5956  participants=19/25  rho=-0.076  drifting_participated=8/10
+
+--- MNAR + fedavg ---
+[mnar round   1/25] acc=0.0572  participants=22/25  rho=+0.000  drifting_participated=0/0
+[mnar round   5/25] acc=0.0720  participants=17/25  rho=+0.863  drifting_participated=2/10
+[mnar round  10/25] acc=0.1865  participants=16/25  rho=+0.771  drifting_participated=1/10
+[mnar round  15/25] acc=0.4192  participants=21/25  rho=+0.722  drifting_participated=6/10
+[mnar round  20/25] acc=0.5679  participants=18/25  rho=+0.779  drifting_participated=3/10
+[mnar round  25/25] acc=0.6205  participants=18/25  rho=+0.865  drifting_participated=3/10
+
+--- MNAR + fedipw_oracle ---
+[mnar round   1/25] acc=0.0572  participants=22/25  rho=+0.000  drifting_participated=0/0
+[mnar round   5/25] acc=0.0471  participants=17/25  rho=+0.863  drifting_participated=2/10
+[mnar round  10/25] acc=0.1597  participants=16/25  rho=+0.771  drifting_participated=1/10
+[mnar round  15/25] acc=0.3149  participants=21/25  rho=+0.722  drifting_participated=6/10
+[mnar round  20/25] acc=0.4589  participants=18/25  rho=+0.779  drifting_participated=3/10
+[mnar round  25/25] acc=0.5873  participants=18/25  rho=+0.865  drifting_participated=3/10
+
+--- MNAR + fedipw_estimated ---
+[mnar round   1/25] acc=0.0572  participants=22/25  rho=+0.000  drifting_participated=0/0
+[mnar round   5/25] acc=0.0499  participants=17/25  rho=+0.863  drifting_participated=2/10
+[mnar round  10/25] acc=0.1791  participants=16/25  rho=+0.771  drifting_participated=1/10
+[mnar round  15/25] acc=0.3536  participants=21/25  rho=+0.722  drifting_participated=6/10
+[mnar round  20/25] acc=0.4349  participants=18/25  rho=+0.779  drifting_participated=3/10
+[mnar round  25/25] acc=0.6187  participants=18/25  rho=+0.865  drifting_participated=3/10
+
+======================================================================
+SUMMARY — final accuracy (round 25), by mechanism x method
+======================================================================
+           |     fedavg | ipw_oracle |    ipw_est
+      MCAR |     0.6270 |     0.6270 |     0.5956
+      MNAR |     0.6205 |     0.5873 |     0.6187
+
+Does FedIPW's advantage over FedAvg shrink specifically under MNAR?
+  fedipw_oracle: gain over FedAvg under MCAR = +0.0000  |  under MNAR = -0.0332
+  fedipw_estimated: gain over FedAvg under MCAR = -0.0314  |  under MNAR = -0.0018
+======================================================================

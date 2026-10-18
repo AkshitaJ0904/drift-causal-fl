@@ -1,0 +1,39 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+======================================================================
+FIRST MCAR vs MAR vs MNAR COMPARISON (single seed, reduced scale)
+======================================================================
+Generating partition_id_to_indices: 0it [00:00, ?it/s]Generating partition_id_to_indices: 433112it [00:00, 4330865.99it/s]Generating partition_id_to_indices: 814277it [00:00, 4459033.39it/s]
+[data] Loaded dataset: FEMNIST (real, writer-partitioned) (25 clients, 62 classes)
+[drift] 10/25 clients will drift
+
+--- Running mechanism: MCAR ---
+[mcar round   1/25] acc=0.0572  participants=22/25  rho=+0.000  drifting_participated=0/0
+[mcar round   5/25] acc=0.0342  participants=18/25  rho=+0.033  drifting_participated=7/10
+[mcar round  10/25] acc=0.0563  participants=20/25  rho=+0.003  drifting_participated=8/10
+[mcar round  15/25] acc=0.2216  participants=19/25  rho=+0.500  drifting_participated=5/10
+[mcar round  20/25] acc=0.3915  participants=16/25  rho=+0.245  drifting_participated=5/10
+[mcar round  25/25] acc=0.5208  participants=16/25  rho=+0.239  drifting_participated=5/10
+
+--- Running mechanism: MAR ---
+[ mar round   1/25] acc=0.0471  participants=19/25  rho=+0.000  drifting_participated=0/0
+[ mar round   5/25] acc=0.1210  participants=18/25  rho=-0.137  drifting_participated=8/10
+[ mar round  10/25] acc=0.0471  participants=20/25  rho=-0.408  drifting_participated=10/10
+[ mar round  15/25] acc=0.2548  participants=19/25  rho=+0.115  drifting_participated=7/10
+[ mar round  20/25] acc=0.4174  participants=17/25  rho=-0.030  drifting_participated=7/10
+[ mar round  25/25] acc=0.5069  participants=18/25  rho=-0.141  drifting_participated=8/10
+
+--- Running mechanism: MNAR ---
+[mnar round   1/25] acc=0.0572  participants=22/25  rho=+0.000  drifting_participated=0/0
+[mnar round   5/25] acc=0.0757  participants=18/25  rho=+0.584  drifting_participated=4/10
+[mnar round  10/25] acc=0.1145  participants=17/25  rho=+0.668  drifting_participated=3/10
+[mnar round  15/25] acc=0.2946  participants=18/25  rho=+0.768  drifting_participated=3/10
+[mnar round  20/25] acc=0.4672  participants=16/25  rho=+0.758  drifting_participated=2/10
+[mnar round  25/25] acc=0.5900  participants=16/25  rho=+0.746  drifting_participated=2/10
+
+======================================================================
+SUMMARY — final-round accuracy by mechanism (matched dropout rate)
+======================================================================
+MCAR: final accuracy = 0.5208  (realized dropout rate = 0.360, rho = +0.239)
+ MAR: final accuracy = 0.5069  (realized dropout rate = 0.280, rho = -0.141)
+MNAR: final accuracy = 0.5900  (realized dropout rate = 0.360, rho = +0.746)
+======================================================================

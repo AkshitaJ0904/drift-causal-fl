@@ -1,0 +1,74 @@
+[
+  {
+    "round": 1,
+    "mechanism": "mnar",
+    "method": "fedipw_estimated",
+    "accuracy": 0.057248384118190214,
+    "n_participants": 22,
+    "realized_dropout_rate": 0.12,
+    "realized_rho": 0.0,
+    "n_drifting_total": 0,
+    "n_drifting_participated": 0,
+    "elapsed_sec": 3.4
+  },
+  {
+    "round": 5,
+    "mechanism": "mnar",
+    "method": "fedipw_estimated",
+    "accuracy": 0.04986149584487535,
+    "n_participants": 17,
+    "realized_dropout_rate": 0.31999999999999995,
+    "realized_rho": 0.8629969689810437,
+    "n_drifting_total": 10,
+    "n_drifting_participated": 2,
+    "elapsed_sec": 13.1
+  },
+  {
+    "round": 10,
+    "mechanism": "mnar",
+    "method": "fedipw_estimated",
+    "accuracy": 0.1791320406278855,
+    "n_participants": 16,
+    "realized_dropout_rate": 0.36,
+    "realized_rho": 0.77083467265508,
+    "n_drifting_total": 10,
+    "n_drifting_participated": 1,
+    "elapsed_sec": 25.4
+  },
+  {
+    "round": 15,
+    "mechanism": "mnar",
+    "method": "fedipw_estimated",
+    "accuracy": 0.3536472760849492,
+    "n_participants": 21,
+    "realized_dropout_rate": 0.16000000000000003,
+    "realized_rho": 0.7224756189883454,
+    "n_drifting_total": 10,
+    "n_drifting_participated": 6,
+    "elapsed_sec": 38.2
+  },
+  {
+    "round": 20,
+    "mechanism": "mnar",
+    "method": "fedipw_estimated",
+    "accuracy": 0.43490304709141275,
+    "n_participants": 18,
+    "realized_dropout_rate": 0.28,
+    "realized_rho": 0.7793360154062632,
+    "n_drifting_total": 10,
+    "n_drifting_participated": 3,
+    "elapsed_sec": 50.4
+  },
+  {
+    "round": 25,
+    "mechanism": "mnar",
+    "method": "fedipw_estimated",
+    "accuracy": 0.61865189289012,
+    "n_participants": 18,
+    "realized_dropout_rate": 0.28,
+    "realized_rho": 0.8645648121648383,
+    "n_drifting_total": 10,
+    "n_drifting_participated": 3,
+    "elapsed_sec": 63.7
+  }
+]

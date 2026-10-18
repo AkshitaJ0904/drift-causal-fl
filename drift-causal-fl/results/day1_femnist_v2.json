@@ -1,0 +1,57 @@
+[
+  {
+    "round": 1,
+    "accuracy": 0.05480225988700565,
+    "elapsed_sec": 11.3
+  },
+  {
+    "round": 4,
+    "accuracy": 0.05480225988700565,
+    "elapsed_sec": 262.0
+  },
+  {
+    "round": 8,
+    "accuracy": 0.3632768361581921,
+    "elapsed_sec": 358.5
+  },
+  {
+    "round": 12,
+    "accuracy": 0.5084745762711864,
+    "elapsed_sec": 398.3
+  },
+  {
+    "round": 16,
+    "accuracy": 0.619774011299435,
+    "elapsed_sec": 440.8
+  },
+  {
+    "round": 20,
+    "accuracy": 0.6711864406779661,
+    "elapsed_sec": 481.3
+  },
+  {
+    "round": 24,
+    "accuracy": 0.656497175141243,
+    "elapsed_sec": 522.0
+  },
+  {
+    "round": 28,
+    "accuracy": 0.7101694915254237,
+    "elapsed_sec": 562.5
+  },
+  {
+    "round": 32,
+    "accuracy": 0.7186440677966102,
+    "elapsed_sec": 606.2
+  },
+  {
+    "round": 36,
+    "accuracy": 0.727683615819209,
+    "elapsed_sec": 1873.8
+  },
+  {
+    "round": 40,
+    "accuracy": 0.5621468926553672,
+    "elapsed_sec": 5676.1
+  }
+]

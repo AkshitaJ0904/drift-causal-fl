@@ -1,0 +1,22 @@
+[
+  {
+    "round": 1,
+    "accuracy": 0.04885057471264368,
+    "elapsed_sec": 3.5
+  },
+  {
+    "round": 5,
+    "accuracy": 0.03879310344827586,
+    "elapsed_sec": 14.1
+  },
+  {
+    "round": 10,
+    "accuracy": 0.035919540229885055,
+    "elapsed_sec": 27.3
+  },
+  {
+    "round": 15,
+    "accuracy": 0.04454022988505747,
+    "elapsed_sec": 40.5
+  }
+]

@@ -1,0 +1,68 @@
+[
+  {
+    "round": 1,
+    "mechanism": "mcar",
+    "accuracy": 0.057248384118190214,
+    "n_participants": 22,
+    "realized_dropout_rate": 0.12,
+    "realized_rho": 0.0,
+    "n_drifting_total": 0,
+    "n_drifting_participated": 0,
+    "elapsed_sec": 3.8
+  },
+  {
+    "round": 5,
+    "mechanism": "mcar",
+    "accuracy": 0.034164358264081256,
+    "n_participants": 18,
+    "realized_dropout_rate": 0.28,
+    "realized_rho": 0.03321606320180907,
+    "n_drifting_total": 10,
+    "n_drifting_participated": 7,
+    "elapsed_sec": 13.5
+  },
+  {
+    "round": 10,
+    "mechanism": "mcar",
+    "accuracy": 0.05632502308402586,
+    "n_participants": 20,
+    "realized_dropout_rate": 0.19999999999999996,
+    "realized_rho": 0.0031423557700283574,
+    "n_drifting_total": 10,
+    "n_drifting_participated": 8,
+    "elapsed_sec": 26.6
+  },
+  {
+    "round": 15,
+    "mechanism": "mcar",
+    "accuracy": 0.22160664819944598,
+    "n_participants": 19,
+    "realized_dropout_rate": 0.24,
+    "realized_rho": 0.49977493720139743,
+    "n_drifting_total": 10,
+    "n_drifting_participated": 5,
+    "elapsed_sec": 38.9
+  },
+  {
+    "round": 20,
+    "mechanism": "mcar",
+    "accuracy": 0.3915050784856879,
+    "n_participants": 16,
+    "realized_dropout_rate": 0.36,
+    "realized_rho": 0.24499311286695846,
+    "n_drifting_total": 10,
+    "n_drifting_participated": 5,
+    "elapsed_sec": 51.4
+  },
+  {
+    "round": 25,
+    "mechanism": "mcar",
+    "accuracy": 0.5207756232686981,
+    "n_participants": 16,
+    "realized_dropout_rate": 0.36,
+    "realized_rho": 0.23864428178559685,
+    "n_drifting_total": 10,
+    "n_drifting_participated": 5,
+    "elapsed_sec": 62.8
+  }
+]

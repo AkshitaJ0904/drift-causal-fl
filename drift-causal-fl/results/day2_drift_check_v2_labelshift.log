@@ -1,0 +1,27 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+======================================================================
+DAY 2 — drift injection + estimator validation
+======================================================================
+Generating partition_id_to_indices: 0it [00:00, ?it/s]Generating partition_id_to_indices: 435628it [00:00, 4355972.59it/s]Generating partition_id_to_indices: 814277it [00:00, 4543039.41it/s]
+[data] Loaded dataset: FEMNIST (real, writer-partitioned) (15 clients, 62 classes)
+Generating partition_id_to_indices: 0it [00:00, ?it/s]Generating partition_id_to_indices: 436171it [00:00, 4361537.38it/s]Generating partition_id_to_indices: 814277it [00:00, 4592497.10it/s]
+[drift] 6/15 clients will drift starting round 3: [0, 3, 4, 6, 7, 8]
+[round  1] trained + drift-scored all clients
+[round  2] trained + drift-scored all clients
+[round  3] trained + drift-scored all clients
+[round  4] trained + drift-scored all clients
+[round  5] trained + drift-scored all clients
+[round  6] trained + drift-scored all clients
+[round  7] trained + drift-scored all clients
+[round  8] trained + drift-scored all clients
+[round  9] trained + drift-scored all clients
+[round 10] trained + drift-scored all clients
+======================================================================
+corr(D_true, D_model)  = 0.065   (model-relative estimator)
+corr(D_true, D_indep)  = 0.752   (model-independent estimator)
+
+At final round (10):
+  model-relative:   drifting clients mean D = -0.1016  |  stable clients mean D = -0.1623
+  model-independent: drifting clients mean D = 0.0016  |  stable clients mean D = 0.0000
+======================================================================
+PASS condition: drifting clients' mean D should be clearly higher than stable clients' for at least one estimator.
