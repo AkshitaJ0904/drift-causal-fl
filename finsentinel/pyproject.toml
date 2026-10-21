@@ -22,14 +22,29 @@ dependencies = [
 dev = [
     "pytest>=8.3,<10.0",
     "pytest-cov>=6.0,<8.0",
-    "httpx>=0.28,<1.0",
+    "httpx2>=2.0,<3.0",
     "ruff>=0.11,<1.0",
     "mypy>=1.15,<2.0",
 ]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["finsentinel*"]
+include = [
+    "app*",
+    "api*",
+    "core*",
+    "ingestion*",
+    "features*",
+    "detection*",
+    "training*",
+    "attacks*",
+    "policy*",
+    "enforcement*",
+    "audit*",
+    "aggregation*",
+    "privacy*",
+    "integrations*",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

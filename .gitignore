@@ -39,3 +39,6 @@ artifacts/models/*
 htmlcov/
 .mypy_cache/
 .ruff_cache/
+
+
+run.bat
