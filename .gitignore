@@ -4,3 +4,38 @@ __pycache__/
 drift-causal-fl/data_cache/
 *.egg-info/
 .ipynb_checkpoints/
+
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+venv-security/
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Generated data and model artifacts
+data/raw/*
+data/processed/*
+artifacts/models/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!artifacts/models/.gitkeep
+
+# Test and tooling output
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/

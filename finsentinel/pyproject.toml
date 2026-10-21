@@ -1,0 +1,44 @@
+
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "finsentinel"
+version = "0.1.0"
+description = "Security platform for federated learning model updates"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115,<1.0",
+    "uvicorn[standard]>=0.34,<1.0",
+    "pydantic-settings>=2.7,<3.0",
+    "cryptography>=44,<47",
+    "scikit-learn>=1.6,<2.0",
+    "xgboost>=2.1,<4.0",
+    "numpy>=2.0,<3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3,<10.0",
+    "pytest-cov>=6.0,<8.0",
+    "httpx>=0.28,<1.0",
+    "ruff>=0.11,<1.0",
+    "mypy>=1.15,<2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["finsentinel*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
