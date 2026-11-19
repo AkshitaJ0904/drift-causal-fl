@@ -4,12 +4,9 @@
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import pool
-
 from core.config import get_settings
 from core.supabase.base import Base
 from core.supabase.connection import engine
-from db.models import AuditEvent,UpdateApproval
 
 # Alembic configuration
 config = context.config

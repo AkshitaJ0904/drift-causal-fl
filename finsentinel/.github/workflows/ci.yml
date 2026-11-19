@@ -1,0 +1,162 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+# Minimal read-only permissions.  Jobs that need nothing beyond source checkout
+# inherit this.  No write permissions are granted so a compromised action
+# cannot modify repo contents, packages, or settings.
+permissions:
+  contents: read
+
+# Cancel in-progress runs for the same ref on new pushes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install ruff
+        run: pip install "ruff>=0.11,<1.0"
+      - name: Run ruff check
+        run: ruff check .
+
+  typecheck:
+    name: Type check (mypy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install dependencies
+        run: pip install -r requirements.lock "mypy>=1.15,<2.0"
+      - name: Run mypy
+        run: mypy . --ignore-missing-imports --exclude venv-security
+
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install runtime + dev dependencies
+        run: |
+          pip install -r requirements.lock
+          pip install "pytest>=8.3,<10.0" "pytest-cov>=6.0,<8.0"
+
+      - name: Run tests (SQLite only — no production DB)
+        env:
+          # Isolated SQLite test database — never touches production data.
+          ENVIRONMENT: test
+          DB_USER: test
+          DB_PASSWORD: test
+          DB_HOST: localhost
+          DB_NAME: finsentinel_test
+          FINSENTINEL_ALLOWED_MODEL_VERSIONS: cnn-v1
+          FINSENTINEL_ALLOWED_ROUNDS: "1"
+          FINSENTINEL_MAX_UPDATE_AGE_SECONDS: "99999999"
+          # Operator token for tests that exercise auth endpoints.
+          FINSENTINEL_OPERATOR_TOKEN: ci-test-operator-token-do-not-use-in-production
+        run: |
+          pytest --tb=short -q
+
+  migration-smoke:
+    name: Migration smoke test (Alembic)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: finsentinel_migration_smoke
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install runtime dependencies
+        run: pip install -r requirements.lock
+
+      - name: Run Alembic upgrade to head on disposable database
+        env:
+          DB_USER: test_user
+          DB_PASSWORD: test_password
+          DB_HOST: localhost
+          DB_PORT: "5432"
+          DB_NAME: finsentinel_migration_smoke
+          ENVIRONMENT: test
+        run: |
+          alembic upgrade head
+          echo "Migration smoke test: upgrade to head succeeded."
+
+      - name: Verify migration head matches codebase
+        env:
+          DB_USER: test_user
+          DB_PASSWORD: test_password
+          DB_HOST: localhost
+          DB_PORT: "5432"
+          DB_NAME: finsentinel_migration_smoke
+          ENVIRONMENT: test
+        run: |
+          alembic current
+          alembic check
+
+  frontend:
+    name: Frontend (type-check, test, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build
+        run: npm run build

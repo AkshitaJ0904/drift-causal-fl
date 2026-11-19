@@ -14,6 +14,7 @@ def make_envelope(payload: bytes) -> UpdateEnvelope:
             "client_id": "client-001",
             "model_version": "cnn-v1",
             "round_number": 1,
+            "sample_count": 1,
             "payload_sha256": hashlib.sha256(payload).hexdigest(),
             "payload_size_bytes": len(payload),
             "created_at": "2026-10-21T10:00:00Z",

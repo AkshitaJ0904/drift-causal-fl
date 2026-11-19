@@ -16,7 +16,7 @@ def main() -> None:
         print("Database connection successful.")
         print(f"Database: {database}")
         print(f"Connected user: {user}")
-        print(f"PostgreSQL version: {version.split(',')[0]}")
+        print(f"PostgreSQL version: {str(version).split(',')[0]}")
 
 
 if __name__ == "__main__":

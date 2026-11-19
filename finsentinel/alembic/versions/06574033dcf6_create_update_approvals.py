@@ -5,17 +5,17 @@ Revises: 958938d57372
 Create Date: 2026-10-22 23:44:10.533029
 
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = '06574033dcf6'
-down_revision: Union[str, Sequence[str], None] = '958938d57372'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = '958938d57372'
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -29,16 +29,27 @@ def upgrade() -> None:
     sa.Column('round_number', sa.Integer(), nullable=False),
     sa.Column('status', sa.String(length=32), server_default='pending_approval', nullable=False),
     sa.Column('reason', sa.Text(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column(
+        'created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False
+    ),
+    sa.Column(
+        'updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False
+    ),
     sa.Column('decided_at', sa.DateTime(timezone=True), nullable=True),
-    sa.CheckConstraint("status IN ('validated', 'pending_approval', 'approved', 'rejected', 'quarantined')", name='ck_update_approvals_valid_status'),
+    sa.CheckConstraint(
+        "status IN ('validated', 'pending_approval', 'approved', 'rejected', 'quarantined')",
+        name='ck_update_approvals_valid_status',
+    ),
     sa.CheckConstraint('round_number >= 1', name='ck_update_approvals_positive_round'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('client_id', 'update_id', name='uq_update_approvals_client_update')
     )
-    op.create_index('ix_update_approvals_client_id', 'update_approvals', ['client_id'], unique=False)
-    op.create_index('ix_update_approvals_created_at', 'update_approvals', ['created_at'], unique=False)
+    op.create_index(
+        'ix_update_approvals_client_id', 'update_approvals', ['client_id'], unique=False
+    )
+    op.create_index(
+        'ix_update_approvals_created_at', 'update_approvals', ['created_at'], unique=False
+    )
     op.create_index('ix_update_approvals_status', 'update_approvals', ['status'], unique=False)
     # ### end Alembic commands ###
 

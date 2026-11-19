@@ -1,8 +1,9 @@
 
-"""API tests for update integrity and cryptographic authentication."""
+"""API tests for update integrity, cryptographic authentication, and detection."""
 
 import base64
 import hashlib
+from collections.abc import Generator
 
 import pytest
 import torch
@@ -31,18 +32,18 @@ TEST_PRIVATE_KEY = Ed25519PrivateKey.generate()
 TEST_PUBLIC_KEY = TEST_PRIVATE_KEY.public_key()
 
 
-def valid_model_payload() -> bytes:
+def valid_model_payload(weight_val: float = 1.0) -> bytes:
     """Create a valid serialized model-weight payload."""
     return serialize_state_dict(
         {
-            "layer.weight": torch.tensor([[1.0, 2.0]]),
-            "layer.bias": torch.tensor([0.5]),
+            "layer.weight": torch.tensor([[weight_val, weight_val]], dtype=torch.float32),
+            "layer.bias": torch.tensor([0.5], dtype=torch.float32),
         }
     )
 
 
 @pytest.fixture(autouse=True)
-def reset_security_registries() -> None:
+def reset_security_registries() -> Generator[None, None, None]:
     """Reset in-memory security state around each API test."""
     clear_trusted_keys()
     clear_replay_registry()
@@ -70,6 +71,7 @@ def make_request(
     *,
     client_id: str = "client-001",
     update_id: str = "update-001",
+    sample_count: int = 1,
 ) -> dict:
     """Build a signed request and register its test public key."""
     envelope = UpdateEnvelope.model_validate(
@@ -78,6 +80,7 @@ def make_request(
             "client_id": client_id,
             "model_version": "cnn-v1",
             "round_number": 1,
+            "sample_count": sample_count,
             "payload_sha256": hashlib.sha256(payload).hexdigest(),
             "payload_size_bytes": len(payload),
             "created_at": "2026-10-21T10:00:00Z",
@@ -93,6 +96,7 @@ def make_request(
         key_id="key-001",
         client_id=client_id,
         public_key=TEST_PUBLIC_KEY,
+        max_sample_count=10_000,
     )
 
     return {
@@ -135,6 +139,10 @@ def test_valid_signed_update_returns_success_and_requires_approval() -> None:
     assert body["tensor_count"] == 2
     assert "state_dict" not in body
     assert "tensor_names" not in body
+    assert "risk_score" in body
+    assert "severity" in body
+    assert "suspicious" in body
+    assert body["suspicious"] is False
 
     record = get_update_record(
         client_id="client-001",
@@ -142,6 +150,44 @@ def test_valid_signed_update_returns_success_and_requires_approval() -> None:
     )
     assert record is not None
     assert record.status == UpdateStatus.PENDING_APPROVAL
+
+
+def test_suspicious_update_is_flagged_in_api_and_retains_pending_approval(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Lower max_weight_l2_norm threshold via a detection_config injected at the service level.
+    # We cannot rely on monkeypatch.setenv because get_detection_config calls get_settings()
+    # which is @lru_cache -- the env var change would not propagate to the cached Settings.
+    # Instead we monkeypatch get_detection_config in the ingestion service module directly.
+    import ingestion.service as ingestion_service_mod
+    from detection.rule_based import RuleBasedDetectionConfig
+
+    def mock_get_detection_config(settings=None):
+        return RuleBasedDetectionConfig(
+            max_weight_l2_norm=0.5,
+            max_update_l2_norm=None,
+        )
+
+    monkeypatch.setattr(ingestion_service_mod, "get_detection_config", mock_get_detection_config)
+
+    payload = valid_model_payload(weight_val=2.0)
+    request_data = make_request(payload, update_id="update-suspicious-api")
+
+    response = client.post(ENDPOINT, json=request_data)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["suspicious"] is True
+    assert body["risk_score"] > 0
+    assert body["approval_status"] == UpdateStatus.PENDING_APPROVAL.value
+    assert len(body["anomaly_reasons"]) >= 1
+
+    record = get_update_record(
+        client_id="client-001",
+        update_id="update-suspicious-api",
+    )
+    assert record.status == UpdateStatus.PENDING_APPROVAL
+    assert "human review required" in record.reason
 
 
 def test_modified_payload_is_rejected() -> None:
@@ -181,6 +227,8 @@ def test_oversized_request_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
     assert response.status_code == 413
 
 
+
+
 def test_invalid_signature_is_rejected() -> None:
     request_data = make_request(valid_model_payload())
     request_data["envelope"]["signature"] = (
@@ -210,9 +258,53 @@ def test_key_for_another_client_is_rejected() -> None:
         key_id="key-001",
         client_id="another-client",
         public_key=TEST_PUBLIC_KEY,
+        max_sample_count=10_000,
     )
 
     response = client.post(ENDPOINT, json=request_data)
 
     assert response.status_code == 401
     assert "not authorized" in response.json()["detail"]
+
+
+def test_sample_count_above_trusted_key_limit_is_rejected() -> None:
+    request_data = make_request(valid_model_payload(), sample_count=10_001)
+
+    response = client.post(ENDPOINT, json=request_data)
+
+    assert response.status_code == 403
+    assert response.json()["detail"]["code"] == "sample_count_limit_exceeded"
+
+
+def test_sample_count_requires_a_server_configured_key_limit() -> None:
+    request_data = make_request(valid_model_payload())
+    register_trusted_key(
+        key_id="key-001",
+        client_id="client-001",
+        public_key=TEST_PUBLIC_KEY,
+    )
+
+    response = client.post(ENDPOINT, json=request_data)
+
+    assert response.status_code == 403
+    assert response.json()["detail"]["code"] == "sample_count_limit_missing"
+
+
+def test_audit_failure_reported_in_api_response(monkeypatch: pytest.MonkeyPatch) -> None:
+    from sqlalchemy.exc import OperationalError
+    def mock_audit(*args, **kwargs):
+        raise OperationalError("audit error", params=None, orig=Exception())
+
+    # Must patch the name as imported in ingestion.service, not the source module,
+    # because ingestion/service.py uses `from audit.service import record_audit_event`.
+    import ingestion.service as ingestion_service_mod
+    monkeypatch.setattr(ingestion_service_mod, "record_audit_event", mock_audit)
+
+    response = client.post(
+        ENDPOINT,
+        json=make_request(valid_model_payload(), update_id="update-audit-api-fail"),
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["audit_status"] == "failed"
+    assert body["approval_status"] == UpdateStatus.PENDING_APPROVAL.value

@@ -1,5 +1,6 @@
 """Tests for pre-serialization state-dictionary validation."""
 import torch
+
 from features.update_validation import validate_state_dict
 
 
@@ -68,7 +69,7 @@ def test_model_size_limit_is_enforced() -> None:
 def test_non_tensor_entry_is_rejected() -> None:
     state = {"weight": "not a tensor"}
 
-    result = validate_state_dict(state)
+    result = validate_state_dict(state)  # type: ignore[arg-type]
 
     assert not result.accepted
     assert "not a PyTorch tensor" in result.reason

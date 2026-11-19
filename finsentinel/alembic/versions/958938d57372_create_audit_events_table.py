@@ -5,17 +5,17 @@ Revises:
 Create Date: 2026-10-21 20:51:55.465453
 
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = '958938d57372'
-down_revision: Union[str, Sequence[str], None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -28,12 +28,16 @@ def upgrade() -> None:
     sa.Column('client_id', sa.String(length=128), nullable=True),
     sa.Column('update_id', sa.String(length=128), nullable=True),
     sa.Column('description', sa.Text(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column(
+        'created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False
+    ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_audit_events_client_id'), 'audit_events', ['client_id'], unique=False)
     op.create_index('ix_audit_events_created_at', 'audit_events', ['created_at'], unique=False)
-    op.create_index(op.f('ix_audit_events_event_type'), 'audit_events', ['event_type'], unique=False)
+    op.create_index(
+        op.f('ix_audit_events_event_type'), 'audit_events', ['event_type'], unique=False
+    )
     # ### end Alembic commands ###
 
 

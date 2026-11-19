@@ -5,9 +5,9 @@ This module flags unusual update statistics. It does not prove that an
 update is malicious, and it does not replace security validation.
 """
 
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass
-import math
 
 
 @dataclass(frozen=True)

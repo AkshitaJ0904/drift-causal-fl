@@ -1,14 +1,14 @@
 
 """Approval-gated weighted FedAvg aggregation."""
 
-from dataclasses import dataclass
 import hashlib
-import hmac
 from collections.abc import Mapping
+from dataclasses import dataclass
 
 import torch
 from torch import Tensor
 
+from core.config import TRUST_MODE_COORDINATOR_VERIFIED, get_sample_count_trust_mode
 from enforcement.approval_service import is_approved
 from features.model_schema import validate_model_schema
 from ingestion.serialization import deserialize_state_dict
@@ -28,6 +28,7 @@ class ApprovedUpdatePayload:
     round_number: int
     payload: bytes
     sample_count: int
+    sample_count_provenance: str | None = None
 
 
 def aggregate_approved_updates(
@@ -37,6 +38,7 @@ def aggregate_approved_updates(
     model_version: str,
     round_number: int,
     max_total_bytes: int = 10_000_000,
+    require_verified_provenance: bool = False,
 ) -> dict[str, Tensor]:
     """Aggregate only payloads whose exact bytes have been approved.
 
@@ -44,6 +46,11 @@ def aggregate_approved_updates(
     This function accepts original serialized payload bytes so it can verify
     the exact digest recorded during ingestion.
     """
+    trust_mode = get_sample_count_trust_mode()
+    effective_require_verified = require_verified_provenance or (
+        trust_mode == TRUST_MODE_COORDINATOR_VERIFIED
+    )
+
     if not updates:
         raise AggregationRejectedError(
             "At least one approved update is required."
@@ -112,6 +119,8 @@ def aggregate_approved_updates(
             model_version=item.model_version,
             round_number=item.round_number,
             payload_sha256=actual_digest,
+            sample_count=item.sample_count,
+            require_verified_provenance=effective_require_verified,
         ):
             raise AggregationRejectedError(
                 "Update is not approved for this exact payload, model, and round."
@@ -147,13 +156,12 @@ def aggregate_approved_updates(
             "Total sample count must be positive."
         )
 
-    reference = validated_updates[0][0]
     aggregated: dict[str, Tensor] = {}
 
-    for name, reference_tensor in reference.items():
-        if reference_tensor.is_floating_point():
+    for name, server_tensor in expected_state_dict.items():
+        if server_tensor.is_floating_point():
             accumulator = torch.zeros_like(
-                reference_tensor,
+                server_tensor,
                 dtype=torch.float64,
                 device="cpu",
             )
@@ -165,7 +173,7 @@ def aggregate_approved_updates(
                 )
                 accumulator.add_(tensor, alpha=sample_count / total_samples)
 
-            result = accumulator.to(dtype=reference_tensor.dtype)
+            result = accumulator.to(dtype=server_tensor.dtype)
 
             if not torch.isfinite(result).all().item():
                 raise AggregationRejectedError(
@@ -174,18 +182,20 @@ def aggregate_approved_updates(
 
             aggregated[name] = result
         else:
-            # Integer buffers (for example, counters) must agree across
-            # clients. Never average integer values and silently truncate.
-            first = reference_tensor.detach().cpu()
+            # Integer buffers must match the server's trusted reference.
+            # Comparing clients only against each other (not the server) would
+            # allow a coordinated group to override the server value by all
+            # agreeing on a forgery.
+            server_value = server_tensor.detach().cpu()
 
-            for state_dict, _ in validated_updates[1:]:
+            for state_dict, _ in validated_updates:
                 candidate = state_dict[name].detach().cpu()
 
-                if not torch.equal(first, candidate):
+                if not torch.equal(server_value, candidate):
                     raise AggregationRejectedError(
-                        f"Non-floating tensor {name!r} differs between updates."
+                        f"Non-floating tensor {name!r} differs from server reference."
                     )
 
-            aggregated[name] = first.clone()
+            aggregated[name] = server_value.clone()
 
     return aggregated

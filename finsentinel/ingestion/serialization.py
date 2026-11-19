@@ -77,7 +77,7 @@ def serialize_state_dict(
     arrays[MANIFEST_KEY] = np.frombuffer(manifest_bytes, dtype=np.uint8)
 
     buffer = io.BytesIO()
-    np.savez_compressed(buffer, **arrays)
+    np.savez_compressed(buffer, **arrays)  # type: ignore[arg-type]
     payload = buffer.getvalue()
 
     # Bound the resulting transport payload as well.
@@ -148,20 +148,20 @@ def deserialize_state_dict(
             if manifest.get("format_version") != FORMAT_VERSION:
                 raise SerializationError("Unsupported serialization format version.")
 
-            entries = manifest.get("tensors")
-            if not isinstance(entries, list) or not entries:
+            tensor_entries = manifest.get("tensors")
+            if not isinstance(tensor_entries, list) or not tensor_entries:
                 raise SerializationError("Manifest must contain a non-empty tensor list.")
 
-            if len(entries) > max_tensors:
+            if len(tensor_entries) > max_tensors:
                 raise SerializationError("Tensor count exceeds the configured limit.")
 
-            if manifest.get("tensor_count") != len(entries):
+            if manifest.get("tensor_count") != len(tensor_entries):
                 raise SerializationError("Manifest tensor count does not match.")
 
             expected_archive_keys = {MANIFEST_KEY}
             result: dict[str, Tensor] = {}
 
-            for item in entries:
+            for item in tensor_entries:
                 if not isinstance(item, dict):
                     raise SerializationError("Invalid tensor manifest entry.")
 

@@ -2,7 +2,7 @@
 """Deterministic zero-trust policies for federated-learning updates."""
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from ingestion.schemas import UpdateEnvelope
 
@@ -48,13 +48,13 @@ def evaluate_update_policy(
 ) -> PolicyDecision:
     """Evaluate model-version, round, and timestamp policies."""
 
-    current_time = now or datetime.now(timezone.utc)
+    current_time = now or datetime.now(UTC)
 
     if current_time.tzinfo is None or current_time.utcoffset() is None:
         raise ValueError("'now' must be timezone-aware.")
 
-    current_time = current_time.astimezone(timezone.utc)
-    created_at = envelope.created_at.astimezone(timezone.utc)
+    current_time = current_time.astimezone(UTC)
+    created_at = envelope.created_at.astimezone(UTC)
 
     if envelope.model_version not in policy.allowed_model_versions:
         return PolicyDecision(

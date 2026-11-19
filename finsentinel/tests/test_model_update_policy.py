@@ -1,5 +1,5 @@
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from ingestion.schemas import UpdateEnvelope
 from policy.model_update_policy import (
@@ -19,10 +19,11 @@ def make_envelope(
         client_id="client-001",
         model_version=model_version,
         round_number=round_number,
+        sample_count=1,
         payload_sha256="a" * 64,
         payload_size_bytes=100,
         created_at=created_at or datetime(
-            2026, 10, 22, 12, 0, tzinfo=timezone.utc
+            2026, 10, 22, 12, 0, tzinfo=UTC
         ),
         signature="test-signature",
         signing_key_id="key-001",
@@ -37,7 +38,7 @@ def make_policy():
 
 
 def test_accepts_update_matching_active_policy():
-    now = datetime(2026, 10, 22, 12, 0, tzinfo=timezone.utc)
+    now = datetime(2026, 10, 22, 12, 0, tzinfo=UTC)
 
     decision = evaluate_update_policy(
         make_envelope(created_at=now),
@@ -50,7 +51,7 @@ def test_accepts_update_matching_active_policy():
 
 
 def test_rejects_unapproved_model_version():
-    now = datetime(2026, 10, 22, 12, 0, tzinfo=timezone.utc)
+    now = datetime(2026, 10, 22, 12, 0, tzinfo=UTC)
 
     decision = evaluate_update_policy(
         make_envelope(model_version="cnn-v0", created_at=now),
@@ -63,7 +64,7 @@ def test_rejects_unapproved_model_version():
 
 
 def test_rejects_closed_training_round():
-    now = datetime(2026, 10, 22, 12, 0, tzinfo=timezone.utc)
+    now = datetime(2026, 10, 22, 12, 0, tzinfo=UTC)
 
     decision = evaluate_update_policy(
         make_envelope(round_number=4, created_at=now),
@@ -76,7 +77,7 @@ def test_rejects_closed_training_round():
 
 
 def test_rejects_stale_update():
-    now = datetime(2026, 10, 22, 12, 0, tzinfo=timezone.utc)
+    now = datetime(2026, 10, 22, 12, 0, tzinfo=UTC)
     created_at = now - timedelta(minutes=16)
 
     decision = evaluate_update_policy(
@@ -90,7 +91,7 @@ def test_rejects_stale_update():
 
 
 def test_rejects_timestamp_too_far_in_future():
-    now = datetime(2026, 10, 22, 12, 0, tzinfo=timezone.utc)
+    now = datetime(2026, 10, 22, 12, 0, tzinfo=UTC)
     created_at = now + timedelta(minutes=2)
 
     decision = evaluate_update_policy(

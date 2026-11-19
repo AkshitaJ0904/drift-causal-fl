@@ -18,6 +18,10 @@ build/
 venv/
 venv-security/
 
+# Node.js
+node_modules/
+*.tsbuildinfo
+
 # Secrets
 .env
 .env.*

@@ -7,7 +7,6 @@ import pytest
 import torch
 from sqlalchemy import select
 
-from api import ingestion
 from core.crypto import sign_envelope
 from core.key_registry import clear_trusted_keys
 from core.model_registry import clear_model_schemas, register_model_schema

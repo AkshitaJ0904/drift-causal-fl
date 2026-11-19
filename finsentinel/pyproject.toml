@@ -20,14 +20,14 @@ dependencies = [
     "alembic>=1.15,<2.0",
     "psycopg[binary]>=3.2,<4.0",
     "python-dotenv>=1.0,<2.0",
-    "torch>=2.4,<3.0",
+    "torch>=2.15,<2.16",
+    "httpx>=0.27,<1.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.3,<10.0",
     "pytest-cov>=6.0,<8.0",
-    "httpx2>=2.0,<3.0",
     "ruff>=0.11,<1.0",
     "mypy>=1.15,<2.0",
 ]
@@ -38,6 +38,7 @@ include = [
     "app*",
     "api*",
     "core*",
+    "db*",
     "ingestion*",
     "features*",
     "detection*",
@@ -49,12 +50,22 @@ include = [
     "aggregation*",
     "privacy*",
     "integrations*",
+    "scripts*",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-ra"
+
+[tool.mypy]
+python_version = "3.13"
+ignore_missing_imports = false
+warn_return_any = false
+
+[[tool.mypy.overrides]]
+module = ["joblib", "joblib.*", "sklearn.*"]
+ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 100

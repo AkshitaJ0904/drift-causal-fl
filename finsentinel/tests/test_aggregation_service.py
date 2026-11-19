@@ -15,8 +15,11 @@ from core.supabase.session import SessionLocal
 from enforcement.approval_service import (
     approve_update,
     clear_approval_registry,
+    get_update_record,
+    record_ingestion_audit_result,
     register_validated_update,
 )
+from ingestion.sample_count_provider import PROVENANCE_CLIENT_CLAIMED, SampleCountResult
 from ingestion.serialization import serialize_state_dict
 
 
@@ -43,13 +46,29 @@ def register_and_approve(
     payload: bytes,
     model_version: str = "cnn-v1",
     round_number: int = 1,
+    sample_count: int = 1,
 ) -> None:
     register_validated_update(
         client_id=client_id,
         update_id=update_id,
         model_version=model_version,
         round_number=round_number,
+        sample_count_result=SampleCountResult(
+            count=sample_count, provenance=PROVENANCE_CLIENT_CLAIMED
+        ),
         payload_sha256=hashlib.sha256(payload).hexdigest(),
+        risk_score=0,
+        risk_severity="LOW",
+        suspicious=False,
+        anomaly_reasons=(),
+        detector_version="test-detector-v1",
+        detector_config={"test_threshold": 1.0},
+    )
+    record_ingestion_audit_result(
+        client_id=client_id,
+        update_id=update_id,
+        audit_status="persisted",
+        audit_failures=(),
     )
     approve_update(
         client_id=client_id,
@@ -108,6 +127,7 @@ def test_approved_payload_is_aggregated():
         client_id="client-001",
         update_id="update-001",
         payload=payload,
+        sample_count=3,
     )
 
     result = aggregate_approved_updates(
@@ -210,7 +230,14 @@ def test_rejected_update_cannot_be_aggregated():
         update_id="update-001",
         model_version="cnn-v1",
         round_number=1,
+        sample_count_result=SampleCountResult(count=1, provenance=PROVENANCE_CLIENT_CLAIMED),
         payload_sha256=hashlib.sha256(payload).hexdigest(),
+        risk_score=0,
+        risk_severity="LOW",
+        suspicious=False,
+        anomaly_reasons=(),
+        detector_version="test-detector-v1",
+        detector_config={"test_threshold": 1.0},
     )
 
     from enforcement.approval_service import reject_update
@@ -236,6 +263,46 @@ def test_rejected_update_cannot_be_aggregated():
         )
 
 
+def test_quarantined_update_cannot_be_aggregated():
+    payload = make_payload(1.0)
+    register_validated_update(
+        client_id="client-001",
+        update_id="update-quarantined",
+        model_version="cnn-v1",
+        round_number=1,
+        sample_count_result=SampleCountResult(count=1, provenance=PROVENANCE_CLIENT_CLAIMED),
+        payload_sha256=hashlib.sha256(payload).hexdigest(),
+        risk_score=0,
+        risk_severity="LOW",
+        suspicious=False,
+        anomaly_reasons=(),
+        detector_version="test-detector-v1",
+        detector_config={"test_threshold": 1.0},
+    )
+
+    from enforcement.approval_service import quarantine_update
+
+    quarantine_update(
+        client_id="client-001",
+        update_id="update-quarantined",
+        reason="High-risk update requires investigation.",
+    )
+
+    with pytest.raises(AggregationRejectedError, match="not approved"):
+        aggregate_approved_updates(
+            [
+                make_update(
+                    client_id="client-001",
+                    update_id="update-quarantined",
+                    payload=payload,
+                )
+            ],
+            expected_state_dict=expected_model(),
+            model_version="cnn-v1",
+            round_number=1,
+        )
+
+
 def test_weighted_fedavg_uses_sample_counts():
     payload_a = make_payload(1.0)
     payload_b = make_payload(3.0)
@@ -244,11 +311,13 @@ def test_weighted_fedavg_uses_sample_counts():
         client_id="client-001",
         update_id="update-001",
         payload=payload_a,
+        sample_count=1,
     )
     register_and_approve(
         client_id="client-002",
         update_id="update-002",
         payload=payload_b,
+        sample_count=3,
     )
 
     result = aggregate_approved_updates(
@@ -327,6 +396,83 @@ def test_nonpositive_sample_count_is_rejected():
                     update_id="update-001",
                     payload=payload,
                     sample_count=0,
+                )
+            ],
+            expected_state_dict=expected_model(),
+            model_version="cnn-v1",
+            round_number=1,
+        )
+
+
+def test_sample_count_cannot_change_after_approval():
+    payload = make_payload(1.0)
+    register_and_approve(
+        client_id="client-001",
+        update_id="sample-count-bound-001",
+        payload=payload,
+        sample_count=2,
+    )
+
+    with pytest.raises(AggregationRejectedError, match="not approved"):
+        aggregate_approved_updates(
+            [
+                make_update(
+                    client_id="client-001",
+                    update_id="sample-count-bound-001",
+                    payload=payload,
+                    sample_count=3,
+                )
+            ],
+            expected_state_dict=expected_model(),
+            model_version="cnn-v1",
+            round_number=1,
+        )
+
+
+def test_legacy_approved_record_without_detection_evidence_is_not_aggregated():
+    payload = make_payload(1.0)
+    with SessionLocal() as db, db.begin():
+        from db.models.update_approval import UpdateApproval
+
+        db.add(
+            UpdateApproval(
+                client_id="legacy-client",
+                update_id="legacy-approved",
+                model_version="cnn-v1",
+                round_number=1,
+                sample_count=1,
+                payload_sha256=hashlib.sha256(payload).hexdigest(),
+                status="approved",
+                reason="Approved before structured detection evidence existed.",
+            )
+        )
+
+    record = get_update_record(
+        client_id="legacy-client",
+        update_id="legacy-approved",
+    )
+    assert record.risk_score is None
+    assert record.risk_severity is None
+    assert record.detector_version is None
+    from enforcement.approval_service import is_approved
+
+    assert not is_approved(
+        client_id="legacy-client",
+        update_id="legacy-approved",
+        model_version="cnn-v1",
+        round_number=1,
+        sample_count=1,
+        payload_sha256=hashlib.sha256(payload).hexdigest(),
+    )
+
+    with pytest.raises(AggregationRejectedError, match="not approved"):
+        aggregate_approved_updates(
+            [
+                make_update(
+                    client_id="legacy-client",
+                    update_id="legacy-approved",
+                    payload=payload,
+                    sample_count=1,
                 )
             ],
             expected_state_dict=expected_model(),

@@ -4,17 +4,22 @@
 import base64
 import binascii
 import os
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
+from core.key_registry import RegistryUnavailableError as KeyRegistryUnavailableError
+from core.model_registry import RegistryUnavailableError as ModelRegistryUnavailableError
 from core.replay_protection import ReplayProtectionError
 from ingestion.payload import PayloadIntegrityError
 from ingestion.schemas import UpdateEnvelope
 from ingestion.serialization import SerializationError
 from ingestion.service import (
     ApprovalRegistrationError,
+    DetectionConfigurationError,
     ModelSchemaValidationError,
+    ReplayReservationFinalizationError,
     UpdateAuthenticationError,
     UpdatePolicyRejectedError,
     validate_incoming_update,
@@ -75,11 +80,16 @@ def get_active_model_update_policy() -> ModelUpdatePolicy:
 
 
 @router.post("")
-async def submit_update(
+def submit_update(
     submission: UpdateSubmission,
     request: Request,
-) -> dict[str, str | int]:
-    """Validate an update and register it for approval."""
+) -> dict[str, Any]:
+    """Validate and register an update in FastAPI's synchronous worker pool.
+
+    Validation includes CPU-bound decompression and tensor checks plus
+    synchronous database calls. Keeping this endpoint synchronous prevents
+    that work from blocking the ASGI event loop.
+    """
 
     # 1. Check the declared HTTP request size.
     content_length = request.headers.get("content-length")
@@ -127,6 +137,8 @@ async def submit_update(
     policy = get_active_model_update_policy()
 
     # 4. Validate the update and register it as pending approval.
+    # Concurrency gate is enforced by IngestionConcurrencyMiddleware at the ASGI
+    # layer, before body buffering; this endpoint runs only when a slot is held.
     try:
         result = validate_incoming_update(
             payload,
@@ -171,9 +183,25 @@ async def submit_update(
             status_code=503,
             detail=str(exc),
         ) from exc
+    except ReplayReservationFinalizationError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=str(exc),
+        ) from exc
+    except (KeyRegistryUnavailableError, ModelRegistryUnavailableError) as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Registry service is unavailable. Try again later.",
+        ) from exc
+    except DetectionConfigurationError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=str(exc),
+        ) from exc
 
     # 5. Return metadata only; never expose reconstructed model weights.
     result.pop("state_dict", None)
     result.pop("tensor_names", None)
+    result.pop("features", None)
 
     return result

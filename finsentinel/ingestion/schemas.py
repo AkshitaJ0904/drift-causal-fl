@@ -1,11 +1,10 @@
 
 """Validated metadata contracts for incoming federated-learning updates."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-
 
 Identifier = Annotated[
     str,
@@ -25,9 +24,10 @@ class UpdateEnvelope(BaseModel):
     client_id: Identifier
     model_version: Identifier
 
-    round_number: int = Field(ge=1)
+    round_number: int = Field(ge=1, strict=True)
+    sample_count: int = Field(gt=0, strict=True)
     payload_sha256: str = Field(pattern=r"^[a-fA-F0-9]{64}$")
-    payload_size_bytes: int = Field(gt=0, le=500_000_000)
+    payload_size_bytes: int = Field(gt=0, le=500_000_000, strict=True)
 
     created_at: datetime
     signature: str = Field(min_length=1, max_length=4096)
@@ -38,4 +38,4 @@ class UpdateEnvelope(BaseModel):
     def require_timezone(cls, value: datetime) -> datetime:
         if value.tzinfo is None or value.utcoffset() is None:
             raise ValueError("created_at must include a timezone")
-        return value.astimezone(timezone.utc)
+        return value.astimezone(UTC)

@@ -13,10 +13,13 @@ from enforcement.approval_service import (
     clear_approval_registry,
     get_update_record,
     is_approved,
+    list_pending_updates,
     quarantine_update,
+    record_ingestion_audit_result,
     register_validated_update,
     reject_update,
 )
+from ingestion.sample_count_provider import PROVENANCE_CLIENT_CLAIMED, SampleCountResult
 
 TEST_DIGEST = "a" * 64
 
@@ -35,15 +38,32 @@ def register_update(
     client_id="client-001",
     model_version="cnn-v1",
     round_number=1,
+    sample_count=1,
     payload_sha256=TEST_DIGEST,
 ):
-    return register_validated_update(
+    register_validated_update(
         update_id=update_id,
         client_id=client_id,
         model_version=model_version,
         round_number=round_number,
+        sample_count_result=SampleCountResult(
+            count=sample_count, provenance=PROVENANCE_CLIENT_CLAIMED
+        ),
         payload_sha256=payload_sha256,
+        risk_score=0,
+        risk_severity="LOW",
+        suspicious=False,
+        anomaly_reasons=(),
+        detector_version="test-detector-v1",
+        detector_config={"test_threshold": 1.0},
     )
+    record_ingestion_audit_result(
+        client_id=client_id,
+        update_id=update_id,
+        audit_status="persisted",
+        audit_failures=(),
+    )
+    return get_update_record(client_id=client_id, update_id=update_id)
 
 
 def test_new_update_requires_approval():
@@ -56,12 +76,13 @@ def test_new_update_requires_approval():
         update_id="update-001",
         model_version="cnn-v1",
         round_number=1,
+        sample_count=1,
         payload_sha256=TEST_DIGEST,
     )
 
 
 def test_approval_record_is_persisted_in_database():
-    register_update()
+    record = register_update()
 
     with SessionLocal() as db:
         row = db.scalar(
@@ -74,6 +95,12 @@ def test_approval_record_is_persisted_in_database():
     assert row is not None
     assert row.status == UpdateStatus.PENDING_APPROVAL.value
     assert row.payload_sha256 == TEST_DIGEST
+    assert record.risk_score == 0
+    assert record.risk_severity == "LOW"
+    assert record.suspicious is False
+    assert record.detector_version == "test-detector-v1"
+    assert record.detector_config == {"test_threshold": 1.0}
+    assert record.audit_status == "persisted"
 
 
 def test_approved_update_matches_payload_model_and_round():
@@ -90,6 +117,7 @@ def test_approved_update_matches_payload_model_and_round():
         update_id="update-001",
         model_version="cnn-v1",
         round_number=1,
+        sample_count=1,
         payload_sha256=TEST_DIGEST,
     )
 
@@ -108,7 +136,27 @@ def test_approval_does_not_apply_to_another_payload():
         update_id="update-001",
         model_version="cnn-v1",
         round_number=1,
+        sample_count=1,
         payload_sha256="b" * 64,
+    )
+
+
+def test_approval_does_not_apply_to_another_sample_count():
+    register_update(sample_count=5)
+
+    approve_update(
+        client_id="client-001",
+        update_id="update-001",
+        reason="Approved by reviewer.",
+    )
+
+    assert not is_approved(
+        client_id="client-001",
+        update_id="update-001",
+        model_version="cnn-v1",
+        round_number=1,
+        sample_count=6,
+        payload_sha256=TEST_DIGEST,
     )
 
 
@@ -126,6 +174,7 @@ def test_approval_does_not_apply_to_another_model_version():
         update_id="update-001",
         model_version="cnn-v2",
         round_number=1,
+        sample_count=1,
         payload_sha256=TEST_DIGEST,
     )
 
@@ -170,6 +219,7 @@ def test_unknown_update_is_not_approved():
         update_id="unknown-update",
         model_version="cnn-v1",
         round_number=1,
+        sample_count=1,
         payload_sha256=TEST_DIGEST,
     )
 
@@ -241,6 +291,7 @@ def test_wrong_round_is_not_approved():
         update_id="update-001",
         model_version="cnn-v1",
         round_number=2,
+        sample_count=1,
         payload_sha256=TEST_DIGEST,
     )
 
@@ -294,3 +345,180 @@ def test_round_must_be_positive():
 def test_missing_identifier_is_rejected():
     with pytest.raises(ValueError, match="identifiers are required"):
         register_update(update_id=" ")
+
+def test_register_validated_update_preserves_custom_detection_reason():
+    record = register_validated_update(
+        update_id="update-custom-reason",
+        client_id="client-001",
+        model_version="cnn-v1",
+        round_number=1,
+        sample_count_result=SampleCountResult(count=1, provenance=PROVENANCE_CLIENT_CLAIMED),
+        payload_sha256=TEST_DIGEST,
+        reason="Security validation passed; risk_score=0 (LOW). Approval is still required.",
+        risk_score=0,
+        risk_severity="LOW",
+        suspicious=False,
+        anomaly_reasons=(),
+        detector_version="test-detector-v1",
+        detector_config={"test_threshold": 1.0},
+    )
+    assert record.reason == (
+        "Security validation passed; risk_score=0 (LOW). Approval is still required."
+    )
+
+
+# ---------------------------------------------------------------------------
+# list_pending_updates
+# ---------------------------------------------------------------------------
+
+def test_list_pending_empty_initially():
+    assert list_pending_updates() == []
+
+
+def test_list_pending_returns_pending_record():
+    register_update()
+    pending = list_pending_updates()
+    assert len(pending) == 1
+    assert pending[0].update_id == "update-001"
+    assert pending[0].client_id == "client-001"
+    assert pending[0].status == UpdateStatus.PENDING_APPROVAL
+
+
+def test_list_pending_multiple_records_ordered_by_insertion():
+    for i in range(1, 4):
+        register_update(
+            update_id=f"upd-{i:03d}",
+            client_id="client-001",
+            payload_sha256="c" * 63 + str(i),
+        )
+    pending = list_pending_updates()
+    assert len(pending) == 3
+    assert [r.update_id for r in pending] == ["upd-001", "upd-002", "upd-003"]
+
+
+def test_list_pending_excludes_approved():
+    register_update()
+    approve_update(client_id="client-001", update_id="update-001", reason="ok")
+    assert list_pending_updates() == []
+
+
+def test_list_pending_excludes_rejected():
+    register_update()
+    reject_update(client_id="client-001", update_id="update-001", reason="bad")
+    assert list_pending_updates() == []
+
+
+def test_list_pending_excludes_quarantined():
+    register_update()
+    quarantine_update(client_id="client-001", update_id="update-001", reason="suspicious")
+    assert list_pending_updates() == []
+
+
+def test_list_pending_respects_limit():
+    for i in range(1, 6):
+        register_update(
+            update_id=f"upd-{i:03d}",
+            client_id="client-001",
+            payload_sha256="d" * 63 + str(i),
+        )
+    result = list_pending_updates(limit=3)
+    assert len(result) == 3
+
+
+def test_list_pending_invalid_limit_raises():
+    with pytest.raises(ValueError):
+        list_pending_updates(limit=0)
+    with pytest.raises(ValueError):
+        list_pending_updates(limit=1001)
+
+
+def test_list_pending_non_integer_limit_raises():
+    with pytest.raises(TypeError):
+        list_pending_updates(limit=1.0)  # type: ignore[arg-type]
+
+
+def test_approval_is_blocked_when_audit_result_is_not_persisted():
+    register_validated_update(
+        update_id="update-audit-pending",
+        client_id="client-001",
+        model_version="cnn-v1",
+        round_number=1,
+        sample_count_result=SampleCountResult(count=1, provenance=PROVENANCE_CLIENT_CLAIMED),
+        payload_sha256=TEST_DIGEST,
+        risk_score=0,
+        risk_severity="LOW",
+        suspicious=False,
+        anomaly_reasons=(),
+        detector_version="test-detector-v1",
+        detector_config={"test_threshold": 1.0},
+    )
+
+    record_ingestion_audit_result(
+        client_id="client-001",
+        update_id="update-audit-pending",
+        audit_status="failed",
+        audit_failures=("security.anomaly_clean",),
+    )
+
+    with pytest.raises(ApprovalError, match="complete detection evidence"):
+        approve_update(
+            client_id="client-001",
+            update_id="update-audit-pending",
+            reason="Attempt approval with failed audit.",
+        )
+
+
+def test_historical_record_stays_unassessed_and_cannot_be_approved():
+    with SessionLocal() as db, db.begin():
+        db.add(
+            UpdateApproval(
+                client_id="legacy-client",
+                update_id="legacy-update",
+                model_version="cnn-v1",
+                round_number=1,
+                sample_count=None,
+                payload_sha256=TEST_DIGEST,
+                status=UpdateStatus.PENDING_APPROVAL.value,
+                reason="Legacy record without detection evidence.",
+            )
+        )
+
+    record = get_update_record(
+        client_id="legacy-client",
+        update_id="legacy-update",
+    )
+    assert record.risk_score is None
+    assert record.risk_severity is None
+    assert record.suspicious is None
+    assert record.anomaly_reasons is None
+    assert record.detector_version is None
+    assert record.detector_config is None
+    assert record.audit_status is None
+    assert record.audit_failures is None
+    assert not is_approved(
+        client_id="legacy-client",
+        update_id="legacy-update",
+        model_version="cnn-v1",
+        round_number=1,
+        sample_count=1,
+        payload_sha256=TEST_DIGEST,
+    )
+
+    with pytest.raises(ApprovalError, match="complete detection evidence"):
+        approve_update(
+            client_id="legacy-client",
+            update_id="legacy-update",
+            reason="Must not approve without evidence.",
+        )
+
+
+def test_new_update_requires_explicit_detection_evidence():
+    with pytest.raises(TypeError, match="risk_score"):
+        register_validated_update(
+            update_id="missing-evidence",
+            client_id="client-001",
+            model_version="cnn-v1",
+            round_number=1,
+            sample_count_result=SampleCountResult(count=1, provenance=PROVENANCE_CLIENT_CLAIMED),
+            payload_sha256=TEST_DIGEST,
+        )

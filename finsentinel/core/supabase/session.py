@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from core.supabase.connection import engine
 
-
 SessionLocal = sessionmaker(
     bind=engine,
     class_=Session,

@@ -1,7 +1,6 @@
 
 """Tests for explainable rule-based update anomaly detection."""
 
-import math
 
 import pytest
 
