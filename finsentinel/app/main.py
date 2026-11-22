@@ -11,6 +11,8 @@ from api.approval import router as approval_router
 from api.dashboard import router as dashboard_router
 from api.health import router as health_router
 from api.ingestion import router as ingestion_router
+from api.security_events import router as security_events_router
+from api.vapt_report import router as vapt_report_router
 from core.concurrency import configure_ingestion_cap, get_ingestion_cap
 from core.config import (
     TRUST_MODE_COORDINATOR_VERIFIED,
@@ -247,6 +249,8 @@ app.include_router(ingestion_router, prefix=settings.api_prefix)
 app.include_router(approval_router, prefix=settings.api_prefix)
 app.include_router(aggregation_router, prefix=settings.api_prefix)
 app.include_router(dashboard_router, prefix=settings.api_prefix)
+app.include_router(security_events_router, prefix=settings.api_prefix)
+app.include_router(vapt_report_router, prefix=settings.api_prefix)
 
 
 @app.get("/")

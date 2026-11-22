@@ -1,0 +1,16 @@
+<!-- FinSentinel SIEM event decoder
+     Parses lines from logs/finsentinel-siem.jsonl.
+
+     Each line is a JSON object written by scripts/demo_wazuh_events.py or
+     the production SIEM forwarder.  Format:
+       {"timestamp":"…","event_type":"security.replay_detected",
+        "severity":"high","client_id":"…","update_id":"…","description":"…"}
+
+     Wazuh's built-in JSON decoder automatically extracts all keys as
+     data.<key> fields once the prematch fires.
+-->
+
+<decoder name="finsentinel">
+  <!-- Match any line that begins with a FinSentinel JSON object. -->
+  <prematch>{"timestamp":</prematch>
+</decoder>

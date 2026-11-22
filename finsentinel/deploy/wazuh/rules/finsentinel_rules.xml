@@ -1,0 +1,308 @@
+<!-- FinSentinel custom Wazuh rules  (IDs 100100 – 100199)
+     Decoded-as: finsentinel  (see decoders/finsentinel.xml)
+
+     Severity ladder:
+       level 3  — informational (no alert e-mail)
+       level 7  — low severity
+       level 10 — medium-high (alerts dashboard)
+       level 12 — high (triggers e-mail / notification)
+
+     MITRE ATT&CK technique references follow the technique IDs from
+     https://attack.mitre.org/ relevant to Federated Learning threat models.
+-->
+
+<group name="finsentinel,">
+
+  <!-- ── Base rule (grouping anchor) ─────────────────────────────────── -->
+  <!-- Lines come from logs/finsentinel-siem.jsonl via <localfile log_format json>.
+       Wazuh rule 86600 (Suricata) fires first on any JSON with timestamp+event_type;
+       we chain from it and add source=finsentinel to disambiguate. -->
+  <rule id="100100" level="0">
+    <if_sid>86600</if_sid>
+    <field name="source">^finsentinel$</field>
+    <description>FinSentinel security event</description>
+    <group>finsentinel,</group>
+  </rule>
+
+  <!-- ══ INGESTION EVENTS ════════════════════════════════════════════════ -->
+
+  <!-- Successful authenticated update -->
+  <rule id="100101" level="3">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^security.update_authenticated$</field>
+    <description>FinSentinel: Update from client $(data.client_id) authenticated and queued for review</description>
+    <group>finsentinel,authentication,</group>
+  </rule>
+
+  <!-- Update queued for operator review -->
+  <rule id="100102" level="3">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^security.update_pending_approval$</field>
+    <description>FinSentinel: Update $(data.update_id) from client $(data.client_id) is pending operator approval</description>
+    <group>finsentinel,approval,</group>
+  </rule>
+
+  <!-- Update auto-quarantined by high-risk detection -->
+  <rule id="100103" level="10">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^security.update_quarantined$</field>
+    <description>FinSentinel: Update from client $(data.client_id) auto-quarantined due to high risk score</description>
+    <group>finsentinel,anomaly_detection,</group>
+    <mitre>
+      <id>T1565.001</id>  <!-- Stored Data Manipulation -->
+    </mitre>
+  </rule>
+
+  <!-- Ed25519 signature verification failure — authentication attack -->
+  <rule id="100104" level="12">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^security.signature_verification_failed$</field>
+    <description>FinSentinel: Forged update blocked - invalid signature from client $(data.client_id)</description>
+    <group>finsentinel,authentication_failed,finsentinel_auth_fail,</group>
+    <mitre>
+      <id>T1553</id>  <!-- Subvert Trust Controls -->
+    </mitre>
+  </rule>
+
+  <!-- Replay attack detected -->
+  <rule id="100105" level="12">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^security.replay_detected$</field>
+    <description>FinSentinel: Replay attack blocked - client $(data.client_id) resubmitted update $(data.update_id)</description>
+    <group>finsentinel,replay_attack,</group>
+    <mitre>
+      <id>T1550</id>  <!-- Use Alternate Authentication Material -->
+    </mitre>
+  </rule>
+
+  <!-- Statistical anomaly detected in model update -->
+  <rule id="100106" level="10">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^security.anomaly_detected$</field>
+    <description>FinSentinel: Statistical anomaly detected in model update from client $(data.client_id)</description>
+    <group>finsentinel,anomaly_detection,</group>
+    <mitre>
+      <id>T1565.001</id>  <!-- Stored Data Manipulation -->
+    </mitre>
+  </rule>
+
+  <!-- Model schema mismatch (tensor shape/dtype wrong) -->
+  <rule id="100107" level="10">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^security.model_schema_rejected$</field>
+    <description>FinSentinel: Schema violation blocked - model update from client $(data.client_id) has wrong tensor shape or dtype</description>
+    <group>finsentinel,schema_violation,</group>
+    <mitre>
+      <id>T1565.002</id>  <!-- Transmitted Data Manipulation -->
+    </mitre>
+  </rule>
+
+  <!-- Policy violation (stale timestamp, bad model version, wrong round) -->
+  <rule id="100108" level="10">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^security.policy_rejected\.</field>
+    <description>FinSentinel: Model update rejected by policy — $(data.event_type)</description>
+    <group>finsentinel,policy_violation,</group>
+    <mitre>
+      <id>T1078</id>  <!-- Valid Accounts — policy circumvention attempt -->
+    </mitre>
+  </rule>
+
+  <!-- Sample count limit exceeded -->
+  <rule id="100109" level="10">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^security.sample_count_limit_exceeded$</field>
+    <description>FinSentinel: Update sample count exceeds the per-key server limit</description>
+    <group>finsentinel,policy_violation,</group>
+    <mitre>
+      <id>T1565.002</id>  <!-- Transmitted Data Manipulation -->
+    </mitre>
+  </rule>
+
+  <!-- Signing key has no sample-count limit configured (misconfiguration) -->
+  <rule id="100110" level="12">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^security.sample_count_limit_missing$</field>
+    <description>FinSentinel: Trusted signing key has no sample-count limit — configuration gap</description>
+    <group>finsentinel,misconfiguration,</group>
+  </rule>
+
+  <!-- Approval registration DB failure -->
+  <rule id="100111" level="7">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^security.approval_registration_failed$</field>
+    <description>FinSentinel: Failed to register update for approval — database error</description>
+    <group>finsentinel,service_error,</group>
+  </rule>
+
+  <!-- ══ INGESTION EVENTS (continued) ══════════════════════════════════ -->
+
+  <!-- Payload integrity check failed (hash mismatch) -->
+  <rule id="100112" level="10">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^security.payload_integrity_failed$</field>
+    <description>FinSentinel: Tampered payload blocked - SHA-256 mismatch in update from client $(data.client_id)</description>
+    <group>finsentinel,integrity_violation,</group>
+    <mitre>
+      <id>T1565.002</id>  <!-- Transmitted Data Manipulation -->
+    </mitre>
+  </rule>
+
+  <!-- Unknown signing key presented -->
+  <rule id="100113" level="12">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^security.unknown_signing_key$</field>
+    <description>FinSentinel: Unknown key blocked - client $(data.client_id) used an unregistered signing key</description>
+    <group>finsentinel,authentication_failed,finsentinel_auth_fail,</group>
+    <mitre>
+      <id>T1553</id>  <!-- Subvert Trust Controls -->
+    </mitre>
+  </rule>
+
+  <!-- Client key mismatch (key registered to a different client_id) -->
+  <rule id="100114" level="12">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^security.client_key_mismatch$</field>
+    <description>FinSentinel: Identity mismatch blocked - signing key is registered to a different client, used by $(data.client_id)</description>
+    <group>finsentinel,authentication_failed,finsentinel_auth_fail,</group>
+    <mitre>
+      <id>T1553</id>  <!-- Subvert Trust Controls -->
+    </mitre>
+  </rule>
+
+  <!-- Declared sample count does not match measured count -->
+  <rule id="100115" level="10">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^security.sample_count_mismatch$</field>
+    <description>FinSentinel: Update declared sample count differs from server-measured count</description>
+    <group>finsentinel,policy_violation,</group>
+  </rule>
+
+  <!-- Sample count requires human verification before aggregation -->
+  <rule id="100116" level="10">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^security.sample_count_verification_required$</field>
+    <description>FinSentinel: Sample count verification required before model aggregation</description>
+    <group>finsentinel,approval,</group>
+  </rule>
+
+  <!-- Tensor serialization failed (corrupt payload) -->
+  <rule id="100117" level="7">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^security.serialization_failed$</field>
+    <description>FinSentinel: Model update serialization / deserialization failed</description>
+    <group>finsentinel,service_error,</group>
+  </rule>
+
+  <!-- Anomaly detector cleared an update (clean bill of health) -->
+  <rule id="100118" level="3">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^security.anomaly_clean$</field>
+    <description>FinSentinel: Anomaly detector found no issues in federated update</description>
+    <group>finsentinel,anomaly_detection,</group>
+  </rule>
+
+  <!-- Failed to persist audit status to the database -->
+  <rule id="100119" level="7">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^security.audit_status_persistence_failed$</field>
+    <description>FinSentinel: Failed to persist audit status — database write error</description>
+    <group>finsentinel,service_error,</group>
+  </rule>
+
+  <!-- ══ OPERATOR DECISION EVENTS ═══════════════════════════════════════ -->
+
+  <!-- Operator approved an update -->
+  <rule id="100120" level="3">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^operator.update_approved$</field>
+    <description>FinSentinel: Operator approved update $(data.update_id) from client $(data.client_id)</description>
+    <group>finsentinel,operator,approval,</group>
+  </rule>
+
+  <!-- Operator rejected an update -->
+  <rule id="100121" level="7">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^operator.update_rejected$</field>
+    <description>FinSentinel: Operator rejected update $(data.update_id) from client $(data.client_id)</description>
+    <group>finsentinel,operator,rejection,</group>
+  </rule>
+
+  <!-- Operator quarantined an update -->
+  <rule id="100122" level="10">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^operator.update_quarantined$</field>
+    <description>FinSentinel: Operator quarantined update $(data.update_id) from client $(data.client_id)</description>
+    <group>finsentinel,operator,quarantine,</group>
+    <mitre>
+      <id>T1565.001</id>
+    </mitre>
+  </rule>
+
+  <!-- Operator requested approval (pre-decision audit) -->
+  <rule id="100123" level="3">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^operator.approve_requested$</field>
+    <description>FinSentinel: Operator initiated approval request</description>
+    <group>finsentinel,operator,</group>
+  </rule>
+
+  <!-- Operator requested rejection (pre-decision audit) -->
+  <rule id="100124" level="7">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^operator.reject_requested$</field>
+    <description>FinSentinel: Operator initiated rejection</description>
+    <group>finsentinel,operator,</group>
+  </rule>
+
+  <!-- Operator requested quarantine (pre-decision audit) -->
+  <rule id="100125" level="10">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^operator.quarantine_requested$</field>
+    <description>FinSentinel: Operator initiated quarantine</description>
+    <group>finsentinel,operator,</group>
+  </rule>
+
+  <!-- ══ SCHEMA / REGISTRY EVENTS ═══════════════════════════════════════ -->
+
+  <!-- Model schema registered or updated -->
+  <rule id="100130" level="3">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^schema.registered$</field>
+    <description>FinSentinel: Model schema registered or updated in registry</description>
+    <group>finsentinel,schema,</group>
+  </rule>
+
+  <!-- ══ KEY REGISTRY EVENTS ════════════════════════════════════════════ -->
+
+  <rule id="100131" level="3">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^key.registered$</field>
+    <description>FinSentinel: Trusted client signing key registered</description>
+    <group>finsentinel,key_management,</group>
+  </rule>
+
+  <rule id="100132" level="7">
+    <if_sid>100100</if_sid>
+    <field name="event_type">^key.revoked$</field>
+    <description>FinSentinel: Trusted client signing key revoked</description>
+    <group>finsentinel,key_management,</group>
+  </rule>
+
+  <!-- ══ CORRELATION ════════════════════════════════════════════════════ -->
+
+  <!-- 5+ signature verification failures within 60 seconds from the same
+       ingestion stream: likely brute-force or credential-stuffing.
+       Uses if_matched_sid (standard Wazuh brute-force pattern) rather than
+       if_matched_group, which does not reliably increment frequency counters
+       for file-based JSON log events in Wazuh 4.8.x. -->
+  <rule id="100140" level="13" frequency="5" timeframe="60">
+    <if_matched_sid>100104</if_matched_sid>
+    <description>FinSentinel: Brute-force attack detected - 5+ failed signature checks in 60s, last from client $(data.client_id)</description>
+    <group>finsentinel,authentication_failures,</group>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+  </rule>
+
+</group>
