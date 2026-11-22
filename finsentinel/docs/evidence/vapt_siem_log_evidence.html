@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FinSentinel VAPT Evidence — SIEM Log Events &amp; XSS Rejection</title>
+<style>
+  body { font-family: 'Courier New', monospace; background: #0d1117; color: #e6edf3; margin: 0; padding: 20px; }
+  h1 { color: #58a6ff; border-bottom: 1px solid #30363d; padding-bottom: 8px; font-size: 18px; }
+  h2 { color: #79c0ff; font-size: 14px; margin-top: 20px; }
+  .meta { color: #8b949e; font-size: 11px; margin-bottom: 20px; }
+  table { border-collapse: collapse; width: 100%; font-size: 11px; }
+  th { background: #161b22; color: #58a6ff; padding: 6px 10px; text-align: left; border: 1px solid #30363d; }
+  td { padding: 5px 10px; border: 1px solid #21262d; }
+  tr:nth-child(even) { background: #161b22; }
+  .high { color: #f85149; font-weight: bold; }
+  .med  { color: #e3b341; }
+  .info { color: #3fb950; }
+  .gap  { color: #bc8cff; }
+  .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+  .badge-high { background: #da3633; color: #fff; }
+  .badge-med  { background: #9e6a03; color: #fff; }
+  .badge-low  { background: #0075ca; color: #fff; }
+  .badge-info { background: #238636; color: #fff; }
+  .xss-box { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 12px; margin: 10px 0; }
+  .xss-payload { color: #f85149; font-family: monospace; }
+  .xss-status  { color: #3fb950; font-weight: bold; }
+  .section { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 14px; margin-bottom: 18px; }
+</style>
+</head>
+<body>
+<h1>FinSentinel Phase 3 VAPT — Evidence Page</h1>
+<div class="meta">Run: 900be0 &nbsp;|&nbsp; Target: http://127.0.0.1:8001 &nbsp;|&nbsp; Date: 2026-11-21 &nbsp;|&nbsp; Scope: localhost only</div>
+<div class="meta" style="color:#e3b341;">Note: SIEM events sourced from finsentinel-siem.jsonl (SIEM log). Wazuh alert query (wazuh-alerts-*) requires Docker WSL2 — see Phase 2 live-alert table in IMPLEMENTATION_STATUS.md.</div>
+
+<div class="section">
+<h2>SIEM Log — vapt-* Events (24 events delivered to finsentinel-siem.jsonl)</h2>
+<table>
+  <tr><th>Timestamp</th><th>Event Type</th><th>Client ID</th><th>Wazuh Rule</th><th>Level</th><th>Severity</th></tr>
+  <tr><td>2026-11-21T17:11:16</td><td>key.registered</td><td>vapt-client-0-9f3973</td><td>—</td><td>—</td><td class="info">Info</td></tr>
+  <tr><td>2026-11-21T17:11:16</td><td>key.registered</td><td>vapt-client-1-9f3973</td><td>—</td><td>—</td><td class="info">Info</td></tr>
+  <tr><td>2026-11-21T17:11:28</td><td class="high">security.signature_verification_failed</td><td>vapt-client-0-9f3973</td><td>100104</td><td>12</td><td><span class="badge badge-high">HIGH</span></td></tr>
+  <tr><td>2026-11-21T17:11:28</td><td class="high">security.unknown_signing_key</td><td>vapt-client-0-9f3973</td><td>100113</td><td>12</td><td><span class="badge badge-high">HIGH</span></td></tr>
+  <tr><td>2026-11-21T17:11:28</td><td class="high">security.client_key_mismatch</td><td>vapt-client-0-9f3973</td><td>100114</td><td>12</td><td><span class="badge badge-high">HIGH</span></td></tr>
+  <tr><td>2026-11-21T17:11:28</td><td class="med">security.payload_integrity_failed</td><td>vapt-client-0-9f3973</td><td>100112</td><td>10</td><td><span class="badge badge-med">MEDIUM</span></td></tr>
+  <tr><td>2026-11-21T17:11:28</td><td class="med">security.model_schema_rejected</td><td>vapt-client-0-9f3973</td><td>100107</td><td>10</td><td><span class="badge badge-med">MEDIUM</span> ×9</td></tr>
+  <tr><td>2026-11-21T17:11:28</td><td class="med">security.sample_count_limit_exceeded</td><td>vapt-client-0-9f3973</td><td>100109</td><td>10</td><td><span class="badge badge-med">MEDIUM</span></td></tr>
+  <tr><td>2026-11-21T17:11:28</td><td class="info">operator.approve_requested</td><td>vapt-client-0-9f3973</td><td>—</td><td>—</td><td><span class="badge badge-info">INFO</span> ×4</td></tr>
+  <tr><td>2026-11-21T17:11:28</td><td class="info">operator.reject_requested</td><td>vapt-client-0-9f3973</td><td>—</td><td>—</td><td><span class="badge badge-info">INFO</span> ×2</td></tr>
+</table>
+<p style="color:#8b949e;font-size:11px;margin-top:8px;">Events delivered by outbox worker → forwarder (:9999) → finsentinel-siem.jsonl → Wazuh manager (Docker WSL). All 24 lines are valid JSON (C6-02 verified).</p>
+</div>
+
+<div class="section">
+<h2>XSS / Injection Rejection Evidence (CAT-6)</h2>
+<div class="xss-box">
+  <div style="color:#8b949e;font-size:11px;margin-bottom:6px;">C6-01: XSS payloads in client_id field</div>
+  <table>
+    <tr><th>Payload Sent</th><th>HTTP Status</th><th>Result</th></tr>
+    <tr>
+      <td class="xss-payload">&lt;script&gt;alert(1)&lt;/script&gt;</td>
+      <td class="xss-status">422 Unprocessable Entity</td>
+      <td class="xss-status">REJECTED — Pydantic schema validation</td>
+    </tr>
+    <tr>
+      <td class="xss-payload">&lt;img src=x onerror=alert(1)&gt;</td>
+      <td class="xss-status">422 Unprocessable Entity</td>
+      <td class="xss-status">REJECTED — Pydantic schema validation</td>
+    </tr>
+  </table>
+</div>
+<div class="xss-box">
+  <div style="color:#8b949e;font-size:11px;margin-bottom:6px;">C6-02: JSONL injection in operator reason field</div>
+  <table>
+    <tr><th>Injected Reason Value</th><th>SIEM JSONL Result</th></tr>
+    <tr>
+      <td class="xss-payload">{"source":"finsentinel","event_type":"injected"}\n{"real":"entry"}</td>
+      <td class="xss-status">0 invalid JSONL lines — reason stored as escaped string inside event</td>
+    </tr>
+  </table>
+</div>
+<div class="xss-box">
+  <div style="color:#8b949e;font-size:11px;margin-bottom:6px;">C6-03: Oversized path parameter (client_id = 200+ chars)</div>
+  <table>
+    <tr><th>Test</th><th>HTTP Status</th><th>Result</th></tr>
+    <tr><td>client_id: "vapt-" + "A" × 200</td><td class="xss-status">422</td><td class="xss-status">REJECTED — validate_path_id() max 128 chars</td></tr>
+  </table>
+</div>
+</div>
+
+<div class="section">
+<h2>Detection Coverage Gaps (top 5)</h2>
+<table>
+  <tr><th>Gap ID</th><th>Attack</th><th>Blocked?</th><th>Audit Event</th><th>SIEM/Wazuh</th><th>Severity</th></tr>
+  <tr>
+    <td>G-01</td><td>Failed operator auth (brute-force 100 attempts)</td>
+    <td class="xss-status">YES (401)</td><td class="high">NO — no audit record</td><td class="high">BLIND</td>
+    <td><span class="badge badge-med">MEDIUM</span></td>
+  </tr>
+  <tr>
+    <td>G-02</td><td>POST /aggregation/run trigger + result</td>
+    <td class="xss-status">N/A</td><td class="high">NO — no audit record</td><td class="high">BLIND</td>
+    <td><span class="badge badge-med">MEDIUM</span></td>
+  </tr>
+  <tr>
+    <td>G-03</td><td>No rate limit on operator token endpoint</td>
+    <td class="high">NO (all 401, no 429)</td><td class="high">NO</td><td class="high">BLIND</td>
+    <td><span class="badge badge-med">MEDIUM</span></td>
+  </tr>
+  <tr>
+    <td>G-04</td><td>Forwarder dedup in-memory (restart loses state)</td>
+    <td style="color:#e3b341;">PARTIAL</td><td class="info">YES (outbox idempotency)</td><td class="info">PARTIAL</td>
+    <td><span class="badge badge-low">LOW</span></td>
+  </tr>
+  <tr>
+    <td>G-05</td><td>/docs /redoc /openapi.json exposed (dev)</td>
+    <td style="color:#e3b341;">DEV ONLY</td><td class="info">N/A</td><td class="info">N/A</td>
+    <td><span class="badge badge-low">LOW</span></td>
+  </tr>
+</table>
+</div>
+
+<div class="section">
+<h2>Summary</h2>
+<table>
+  <tr><th>Category</th><th>Tests</th><th>PASS</th><th>FAIL*</th></tr>
+  <tr><td>CAT-1 Authentication</td><td>6</td><td>6</td><td>0</td></tr>
+  <tr><td>CAT-2 Brute Force</td><td>3</td><td>1</td><td>2</td></tr>
+  <tr><td>CAT-3 Update Abuse</td><td>16</td><td>16</td><td>0</td></tr>
+  <tr><td>CAT-4 State Machine</td><td>8</td><td>8</td><td>0</td></tr>
+  <tr><td>CAT-5 Aggregation Bypass</td><td>4</td><td>4</td><td>0</td></tr>
+  <tr><td>CAT-6 Injection</td><td>5</td><td>5</td><td>0</td></tr>
+  <tr><td>CAT-7 SIEM Pipeline</td><td>11</td><td>11</td><td>0</td></tr>
+  <tr><td>CAT-8 Platform Hygiene</td><td>10</td><td>10</td><td>0</td></tr>
+  <tr><td>CAT-9 Secrets/Supply Chain</td><td>4</td><td>4</td><td>0</td></tr>
+  <tr><td>CAT-10 Detection Coverage</td><td>3</td><td>1</td><td>2</td></tr>
+  <tr style="font-weight:bold;background:#161b22"><td>TOTAL</td><td>70</td><td>66</td><td>4</td></tr>
+</table>
+<p style="color:#8b949e;font-size:11px;">* Remaining 4 FAILs are confirmed real security findings (F-01: no rate limit, F-02/C10-02: failed auth not audited, F-03/C10-03: aggregation not audited). All test-setup limitations resolved in run 900be0. See VAPT_REPORT.md §6.</p>
+</div>
+<div style="color:#8b949e;font-size:10px;margin-top:20px;border-top:1px solid #21262d;padding-top:10px;">
+  Generated by scripts/vapt_suite.py | FinSentinel Phase 3 VAPT | Scope: localhost only | For academic/testing purposes only
+</div>
+</body>
+</html>

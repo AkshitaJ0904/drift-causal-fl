@@ -1,0 +1,73 @@
+{
+  "description": "Live OpenSearch query for FinSentinel operator-decision alerts (rule IDs 100120-100122)",
+  "query_timestamp": "2026-11-21T17:24:00Z",
+  "index_pattern": "wazuh-alerts-4.x-*",
+  "indices": [
+    {"index": "wazuh-alerts-4.x-2026.11.20", "docs": 64, "health": "green"},
+    {"index": "wazuh-alerts-4.x-2026.11.21", "docs": 22, "health": "green"}
+  ],
+  "total_alerts_in_cluster": 86,
+  "finsentinel_rule_alerts_total": 6,
+  "alerts": [
+    {
+      "timestamp": "2026-11-21T11:44:52.250Z",
+      "index": "wazuh-alerts-4.x-2026.11.21",
+      "rule_id": "100120",
+      "rule_description": "FinSentinel: Operator approved federated update",
+      "event_type": "operator.update_approved",
+      "update_id": "5a0c51b9-5e09-4b4a-b50a-74aa3009ec9a",
+      "client_id": "submit-client-1",
+      "note": "Demo decision: approved in FinSentinel UI on Jai's explicit instruction (2026-11-21)"
+    },
+    {
+      "timestamp": "2026-11-21T11:45:52.331Z",
+      "index": "wazuh-alerts-4.x-2026.11.21",
+      "rule_id": "100121",
+      "rule_description": "FinSentinel: Operator rejected federated update",
+      "event_type": "operator.update_rejected",
+      "update_id": "935a8dcd-39ce-4acb-bf85-c638856ea1c6",
+      "client_id": "submit-client-2",
+      "note": "Demo decision: rejected in FinSentinel UI on Jai's explicit instruction (2026-11-21)"
+    },
+    {
+      "timestamp": "2026-11-21T11:46:54.410Z",
+      "index": "wazuh-alerts-4.x-2026.11.21",
+      "rule_id": "100122",
+      "rule_description": "FinSentinel: Operator quarantined federated update",
+      "event_type": "operator.update_quarantined",
+      "update_id": "3d6e4b39-8495-4e70-a779-4c220cf3b7a1",
+      "client_id": "submit-client-1",
+      "note": "Demo decision: quarantined in FinSentinel UI on Jai's explicit instruction (2026-11-21)"
+    },
+    {
+      "timestamp": "2026-11-20T20:24:54.410Z",
+      "index": "wazuh-alerts-4.x-2026.11.20",
+      "rule_id": "100120",
+      "rule_description": "FinSentinel: Operator approved federated update",
+      "event_type": "operator.update_approved",
+      "update_id": "5b3c96fb-ebcf-4ef1-908d-c5ef97ee2c75",
+      "client_id": "wz-client-1-fc7149",
+      "note": "Prior session (run fc7149) - 2026-11-20"
+    },
+    {
+      "timestamp": "2026-11-20T20:24:54.410Z",
+      "index": "wazuh-alerts-4.x-2026.11.20",
+      "rule_id": "100121",
+      "rule_description": "FinSentinel: Operator rejected federated update",
+      "event_type": "operator.update_rejected",
+      "update_id": "31d01aee-12eb-4fdd-a854-cab765087635",
+      "client_id": "wz-client-1-fc7149",
+      "note": "Prior session (run fc7149) - 2026-11-20"
+    },
+    {
+      "timestamp": "2026-11-20T20:24:54.410Z",
+      "index": "wazuh-alerts-4.x-2026.11.20",
+      "rule_id": "100122",
+      "rule_description": "FinSentinel: Operator quarantined federated update",
+      "event_type": "operator.update_quarantined",
+      "update_id": "8bd600bf-9230-4a7e-9bee-a7d14bd2d550",
+      "client_id": "wz-client-2-fc7149",
+      "note": "Prior session (run fc7149) - 2026-11-20"
+    }
+  ]
+}

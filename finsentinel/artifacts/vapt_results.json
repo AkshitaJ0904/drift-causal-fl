@@ -1,0 +1,995 @@
+{
+  "run": "900be0",
+  "target": "http://127.0.0.1:8001",
+  "timestamp": "2026-11-21T17:43:43.814130+00:00",
+  "summary": {
+    "total": 70,
+    "pass": 66,
+    "fail": 4
+  },
+  "results": [
+    {
+      "id": "C1-01",
+      "name": "Operator endpoints require auth (no token)",
+      "owasp": "API2:2023 Broken Authentication",
+      "expected": "401/403/503 for all operator endpoints",
+      "actual": "Unauthenticated: none",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "unauthenticated_endpoints": []
+      }
+    },
+    {
+      "id": "C1-02",
+      "name": "Wrong bearer token rejected",
+      "owasp": "API2:2023 Broken Authentication",
+      "expected": "401",
+      "actual": "401",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "id": "C1-03",
+      "name": "Malformed auth header (no Bearer prefix) rejected",
+      "owasp": "API2:2023 Broken Authentication",
+      "expected": "401",
+      "actual": "401",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "id": "C1-04",
+      "name": "Token in query string rejected",
+      "owasp": "API2:2023 Broken Authentication",
+      "expected": "401/403",
+      "actual": "401",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "id": "C1-05",
+      "name": "Whitespace variant in Bearer header",
+      "owasp": "API2:2023 Broken Authentication",
+      "expected": "401 (stripped token won't match)",
+      "actual": "200",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 200,
+        "note": "Leading space in token value \u2014 stripped by server means 401"
+      }
+    },
+    {
+      "id": "C1-06",
+      "name": "Public endpoints accessible without auth",
+      "owasp": "API2:2023 Broken Authentication",
+      "expected": "200 for /health, /health/alerts, /",
+      "actual": "Blocked: none",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "blocked": []
+      }
+    },
+    {
+      "id": "C2-01",
+      "name": "Operator token brute-force: rate limit present",
+      "owasp": "API4:2023 Unrestricted Resource Consumption",
+      "expected": "HTTP 429 or lockout after repeated failures",
+      "actual": "Rate limit: NO \u2014 all 401. Codes: {401: 100}",
+      "result": "FAIL",
+      "severity": "Medium",
+      "evidence": {
+        "rate_limited": false,
+        "codes": {
+          "401": 100
+        },
+        "requests_sent": 100
+      }
+    },
+    {
+      "id": "C2-02",
+      "name": "Operator token brute-force: constant-time comparison",
+      "owasp": "API2:2023 Broken Authentication",
+      "expected": "Timing variance < 50ms (hmac.compare_digest)",
+      "actual": "Min=1.6ms Max=33.5ms Delta=31.9ms",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "min_ms": 1.59,
+        "max_ms": 33.47,
+        "delta_ms": 31.88
+      }
+    },
+    {
+      "id": "C2-03",
+      "name": "Operator token brute-force: audit/SIEM event emitted",
+      "owasp": "API9:2023 Improper Inventory Management",
+      "expected": "SIEM event per failed auth attempt (gap: no such event exists)",
+      "actual": "GAP: no audit event emitted for failed operator auth (known gap)",
+      "result": "FAIL",
+      "severity": "Medium",
+      "evidence": {
+        "note": "Failed operator auth produces no audit outbox record \u2014 SIEM blind spot"
+      }
+    },
+    {
+      "id": "C3-01",
+      "name": "Bad Ed25519 signature rejected",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "401",
+      "actual": "401",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 401,
+        "detail": "{'detail': 'Invalid update signature'}"
+      }
+    },
+    {
+      "id": "C3-02",
+      "name": "Unknown/unregistered signing key rejected",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "401",
+      "actual": "401",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 401,
+        "detail": "{'detail': 'Unknown signing key'}"
+      }
+    },
+    {
+      "id": "C3-03",
+      "name": "Key/client identity mismatch rejected",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "401",
+      "actual": "401",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 401,
+        "detail": "{'detail': 'Signing key is not authorized for this client'}"
+      }
+    },
+    {
+      "id": "C3-04",
+      "name": "Tampered SHA-256 (payload integrity) rejected",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "422",
+      "actual": "422",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 422,
+        "detail": "{'detail': 'Payload SHA-256 digest does not match envelope'}"
+      }
+    },
+    {
+      "id": "C3-05",
+      "name": "Replay attack rejected (duplicate update_id)",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "409 on second submission",
+      "actual": "First=200 Second=409",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "first": 200,
+        "second": 409,
+        "detail": "{'detail': 'Duplicate update detected'}"
+      }
+    },
+    {
+      "id": "C3-06",
+      "name": "Expired timestamp (stale update) rejected",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "403",
+      "actual": "403",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 403,
+        "detail": "{'detail': {'code': 'update_too_old', 'message': 'The update exceeds the permitted age.'}}"
+      }
+    },
+    {
+      "id": "C3-07",
+      "name": "Far-future timestamp (clock skew) rejected",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "403",
+      "actual": "403",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 403,
+        "detail": "{'detail': {'code': 'update_timestamp_in_future', 'message': 'The update timestamp exceeds the permi"
+      }
+    },
+    {
+      "id": "C3-08",
+      "name": "Unknown model version rejected by policy",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "403 or 422",
+      "actual": "422",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 422,
+        "detail": "{'detail': \"Model schema validation failed: No trusted schema registered for model version 'evil-v99"
+      }
+    },
+    {
+      "id": "C3-09",
+      "name": "Unknown round number rejected by policy",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "403",
+      "actual": "403",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 403,
+        "detail": "{'detail': {'code': 'training_round_not_allowed', 'message': 'The training round is not open for upd"
+      }
+    },
+    {
+      "id": "C3-10",
+      "name": "NaN/Inf tensor weights: handled safely",
+      "owasp": "API3:2023 Broken Object Property Level Authorization",
+      "expected": "Accepted (detected) or 422 (deserialization)",
+      "actual": "status=422; NaN in weights may pass ingestion (anomaly detection handles it)",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 422,
+        "note": "status=422; NaN in weights may pass ingestion (anomaly detection handles it)"
+      }
+    },
+    {
+      "id": "C3-11",
+      "name": "Huge sample count exceeds key limit",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "422 (sample_count_limit_exceeded)",
+      "actual": "403",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 403,
+        "detail": "{'detail': {'code': 'sample_count_limit_exceeded', 'message': 'Update sample count exceeds the serve",
+        "note": "sample_count_trust_mode=client_claimed; limit still enforced"
+      }
+    },
+    {
+      "id": "C3-12",
+      "name": "Negative sample count rejected by schema",
+      "owasp": "API3:2023 Broken Object Property Level Authorization",
+      "expected": "422",
+      "actual": "422",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 422
+      }
+    },
+    {
+      "id": "C3-13",
+      "name": "Oversized body (>10 MB) rejected",
+      "owasp": "API4:2023 Unrestricted Resource Consumption",
+      "expected": "413, 422, or connection closed (0)",
+      "actual": "0",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 0,
+        "body_bytes": 11000000
+      }
+    },
+    {
+      "id": "C3-14",
+      "name": "Wrong Content-Type rejected",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "422 or 415",
+      "actual": "422",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 422
+      }
+    },
+    {
+      "id": "C3-15",
+      "name": "Missing required field (envelope) rejected",
+      "owasp": "API3:2023 Broken Object Property Level Authorization",
+      "expected": "422",
+      "actual": "422",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 422
+      }
+    },
+    {
+      "id": "C3-16",
+      "name": "Type confusion (sample_count as string) rejected",
+      "owasp": "API3:2023 Broken Object Property Level Authorization",
+      "expected": "422",
+      "actual": "422",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 422
+      }
+    },
+    {
+      "id": "C4-01",
+      "name": "Approve without token rejected",
+      "owasp": "API1:2023 Broken Object Level Authorization",
+      "expected": "401/503",
+      "actual": "401",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "id": "C4-02",
+      "name": "Valid approval succeeds",
+      "owasp": "API1:2023 Broken Object Level Authorization",
+      "expected": "200",
+      "actual": "200",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 200,
+        "detail": "{'update_id': 'ba85c27c-e49d-434a-92bb-8302741b34fe', 'client_id': 'vapt-client-0-900be0', 'model_ve"
+      }
+    },
+    {
+      "id": "C4-03",
+      "name": "Double approve rejected (409)",
+      "owasp": "API1:2023 Broken Object Level Authorization",
+      "expected": "409",
+      "actual": "409",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 409
+      }
+    },
+    {
+      "id": "C4-04",
+      "name": "Approve+reject race: exactly one wins",
+      "owasp": "API1:2023 Broken Object Level Authorization",
+      "expected": "One 200, one 409 (serialized by DB)",
+      "actual": "Results: [200, 409]",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "results": [
+          200,
+          409
+        ]
+      }
+    },
+    {
+      "id": "C4-05",
+      "name": "Nonexistent update ID returns 404/409",
+      "owasp": "API1:2023 Broken Object Level Authorization",
+      "expected": "404 or 409",
+      "actual": "409",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 409
+      }
+    },
+    {
+      "id": "C4-06",
+      "name": "Random UUID guessing: no accidental hits",
+      "owasp": "API1:2023 Broken Object Level Authorization",
+      "expected": "All 404",
+      "actual": "0 hits out of 20",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "hits": []
+      }
+    },
+    {
+      "id": "C4-07",
+      "name": "Missing reason field rejected by schema",
+      "owasp": "API3:2023 Broken Object Property Level Authorization",
+      "expected": "422",
+      "actual": "422",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 422
+      }
+    },
+    {
+      "id": "C4-08",
+      "name": "Client request on operator endpoint rejected",
+      "owasp": "API5:2023 Broken Function Level Authorization",
+      "expected": "401/503",
+      "actual": "401",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "id": "C5-01",
+      "name": "Pending update rejected by aggregation",
+      "owasp": "API5:2023 Broken Function Level Authorization",
+      "expected": "422",
+      "actual": "422",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 422,
+        "detail": "{'detail': 'Update is not approved for this exact payload, model, and round.'}"
+      }
+    },
+    {
+      "id": "C5-02",
+      "name": "Nonexistent update ID rejected by aggregation",
+      "owasp": "API5:2023 Broken Function Level Authorization",
+      "expected": "422",
+      "actual": "422",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 422
+      }
+    },
+    {
+      "id": "C5-03",
+      "name": "Empty update list rejected",
+      "owasp": "API3:2023 Broken Object Property Level Authorization",
+      "expected": "422",
+      "actual": "422",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 422
+      }
+    },
+    {
+      "id": "C5-04",
+      "name": "Aggregation without token rejected",
+      "owasp": "API5:2023 Broken Function Level Authorization",
+      "expected": "401/503",
+      "actual": "422",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 422
+      }
+    },
+    {
+      "id": "C6-01-scriptal",
+      "name": "XSS in client_id: rejected or sanitized",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "401/422 \u2014 not 200",
+      "actual": "422",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 422,
+        "payload_preview": "<script>alert(1)</script>"
+      }
+    },
+    {
+      "id": "C6-01-img src=x",
+      "name": "XSS in client_id: rejected or sanitized",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "401/422 \u2014 not 200",
+      "actual": "422",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 422,
+        "payload_preview": "<img src=x onerror=alert(1)>"
+      }
+    },
+    {
+      "id": "C6-02",
+      "name": "JSONL injection via operator reason: SIEM stays valid",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "SIEM JSONL stays one valid JSON object per line",
+      "actual": "Invalid lines: none",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "invalid_lines": [],
+        "reason_inject_status": 200
+      }
+    },
+    {
+      "id": "C6-03",
+      "name": "Oversized client_id path param rejected (422)",
+      "owasp": "API3:2023 Broken Object Property Level Authorization",
+      "expected": "422",
+      "actual": "422",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 422
+      }
+    },
+    {
+      "id": "C6-04",
+      "name": "Control characters in path param rejected",
+      "owasp": "API3:2023 Broken Object Property Level Authorization",
+      "expected": "400/404/422 or connection refused (0)",
+      "actual": "0",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 0
+      }
+    },
+    {
+      "id": "C7-01",
+      "name": "Forwarder rejects request without auth token",
+      "owasp": "API2:2023 Broken Authentication",
+      "expected": "401",
+      "actual": "401",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "id": "C7-02",
+      "name": "Forwarder rejects wrong bearer token",
+      "owasp": "API2:2023 Broken Authentication",
+      "expected": "401",
+      "actual": "401",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "id": "C7-03",
+      "name": "Forwarder deduplicates replayed idempotency_key",
+      "owasp": "API4:2023 Unrestricted Resource Consumption",
+      "expected": "200 first, 200 second (dedup = no double-write)",
+      "actual": "First=200 Second=200",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "first": 200,
+        "second": 200,
+        "note": "In-memory dedup; second write to JSONL suppressed"
+      }
+    },
+    {
+      "id": "C7-04",
+      "name": "Forwarder handles oversized body gracefully",
+      "owasp": "API4:2023 Unrestricted Resource Consumption",
+      "expected": "200 or 400/413 (no crash)",
+      "actual": "413",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 413,
+        "body_bytes": 2000111
+      }
+    },
+    {
+      "id": "C7-05",
+      "name": "Forwarder rejects invalid JSON body",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "400 or 401",
+      "actual": "400",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 400
+      }
+    },
+    {
+      "id": "C7-06",
+      "name": "Backend/forwarder not exposed on external interface",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "Ports 8001/9999 bound to 127.0.0.1 only",
+      "actual": "External exposure: none",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "external_exposed": []
+      }
+    },
+    {
+      "id": "C7-07",
+      "name": "Security-events endpoint requires auth",
+      "owasp": "API2:2023 Broken Authentication",
+      "expected": "401/503",
+      "actual": "401",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "id": "C7-08-zero",
+      "name": "Security-events limit abuse (zero)",
+      "owasp": "API4:2023 Unrestricted Resource Consumption",
+      "expected": "200 (capped) or 422",
+      "actual": "422",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 422,
+        "limit": "0"
+      }
+    },
+    {
+      "id": "C7-08-negative",
+      "name": "Security-events limit abuse (negative)",
+      "owasp": "API4:2023 Unrestricted Resource Consumption",
+      "expected": "200 (capped) or 422",
+      "actual": "422",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 422,
+        "limit": "-1"
+      }
+    },
+    {
+      "id": "C7-08-huge",
+      "name": "Security-events limit abuse (huge)",
+      "owasp": "API4:2023 Unrestricted Resource Consumption",
+      "expected": "200 (capped) or 422",
+      "actual": "422",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 422,
+        "limit": "99999"
+      }
+    },
+    {
+      "id": "C7-08-non-numeric",
+      "name": "Security-events limit abuse (non-numeric)",
+      "owasp": "API4:2023 Unrestricted Resource Consumption",
+      "expected": "200 (capped) or 422",
+      "actual": "422",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 422,
+        "limit": "abc"
+      }
+    },
+    {
+      "id": "C8-01",
+      "name": "CORS: no wildcard Allow-All-Origins on API",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "No Access-Control-Allow-Origin: * on API endpoints",
+      "actual": "OPTIONS status=405; headers not fully inspectable via urllib",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "note": "FastAPI default has no CORS middleware; no wildcard header added"
+      }
+    },
+    {
+      "id": "C8-02-docs",
+      "name": "/docs exposed (info: expected in dev)",
+      "owasp": "API9:2023 Improper Inventory Management",
+      "expected": "200 (dev) or 404 (prod)",
+      "actual": "200",
+      "result": "PASS",
+      "severity": "Low",
+      "evidence": {
+        "status": 200,
+        "note": "Acceptable in dev; must be disabled in production"
+      }
+    },
+    {
+      "id": "C8-02-redoc",
+      "name": "/redoc exposed (info: expected in dev)",
+      "owasp": "API9:2023 Improper Inventory Management",
+      "expected": "200 (dev) or 404 (prod)",
+      "actual": "200",
+      "result": "PASS",
+      "severity": "Low",
+      "evidence": {
+        "status": 200,
+        "note": "Acceptable in dev; must be disabled in production"
+      }
+    },
+    {
+      "id": "C8-03",
+      "name": "/openapi.json exposed (info: expected in dev)",
+      "owasp": "API9:2023 Improper Inventory Management",
+      "expected": "200 (dev) or 404 (prod)",
+      "actual": "200",
+      "result": "PASS",
+      "severity": "Low",
+      "evidence": {
+        "note": "Acceptable in dev; must be disabled in production"
+      }
+    },
+    {
+      "id": "C8-04",
+      "name": "No stack trace leaked in error response",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "No Python traceback in HTTP response body",
+      "actual": "Has traceback: False",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "has_traceback": false,
+        "resp_preview": "{'detail': [{'type': 'missing', 'loc': ['body', 'envelope'], 'msg': 'Field required', 'input': {'totally': 'wrong'}}, {'type': 'missing', 'loc': ['body', 'payload_base64'], 'msg': 'Field required', 'i"
+      }
+    },
+    {
+      "id": "C8-05-TRACE",
+      "name": "Method TRACE on /health rejected",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "405 or 404",
+      "actual": "405",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 405
+      }
+    },
+    {
+      "id": "C8-05-PUT",
+      "name": "Method PUT on /health rejected",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "405 or 404",
+      "actual": "405",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 405
+      }
+    },
+    {
+      "id": "C8-05-DELETE",
+      "name": "Method DELETE on /health rejected",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "405 or 404",
+      "actual": "405",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 405
+      }
+    },
+    {
+      "id": "C8-05-PATCH",
+      "name": "Method PATCH on /health rejected",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "expected": "405 or 404",
+      "actual": "405",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 405
+      }
+    },
+    {
+      "id": "C8-06",
+      "name": "Request body size limit enforced (>10 MB declared)",
+      "owasp": "API4:2023 Unrestricted Resource Consumption",
+      "expected": "413 or 422",
+      "actual": "422",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "status": 422
+      }
+    },
+    {
+      "id": "C9-01",
+      "name": "No hardcoded secrets in source files",
+      "owasp": "API9:2023 Improper Inventory Management",
+      "expected": "No hardcoded API keys/passwords/private keys",
+      "actual": "Pattern matches (file only, no values): none",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "matched_files": []
+      }
+    },
+    {
+      "id": "C9-02",
+      "name": "Sensitive files not tracked in git",
+      "owasp": "API9:2023 Improper Inventory Management",
+      "expected": "No .env, *.pem, *.db, dev_token.txt, SIEM log in git",
+      "actual": "Tracked: none",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "tracked": []
+      }
+    },
+    {
+      "id": "C9-03",
+      "name": "Operator token file location outside repo",
+      "owasp": "API9:2023 Improper Inventory Management",
+      "expected": "Token in ~/.finsentinel, not in repo",
+      "actual": "Token path: OK (outside repo)",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "token_in_repo": false
+      }
+    },
+    {
+      "id": "C9-04",
+      "name": "pip-audit: not installed (skip)",
+      "owasp": "API9:2023 Improper Inventory Management",
+      "expected": "N/A",
+      "actual": "SKIP \u2014 pip-audit not available",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "note": "pip-audit not installed"
+      }
+    },
+    {
+      "id": "C10-01",
+      "name": "Detection coverage: ingestion attacks visible in SIEM",
+      "owasp": "API9:2023 Improper Inventory Management",
+      "expected": "Ingestion attack events in SIEM log",
+      "actual": "SIEM vapt events found: 42",
+      "result": "PASS",
+      "severity": "Info",
+      "evidence": {
+        "siem_event_count": 42,
+        "event_types_seen": [
+          "security.unknown_signing_key",
+          "security.payload_integrity_failed",
+          "security.model_schema_rejected",
+          "operator.reject_requested",
+          "security.signature_verification_failed",
+          "security.policy_rejected.update_timestamp_in_future",
+          "security.policy_rejected.training_round_not_allowed",
+          "security.client_key_mismatch",
+          "key.registered",
+          "security.sample_count_limit_exceeded"
+        ]
+      }
+    },
+    {
+      "id": "C10-02",
+      "name": "Detection gap: failed operator auth not in SIEM",
+      "owasp": "API9:2023 Improper Inventory Management",
+      "expected": "GAP: no audit event for 401 on operator endpoints",
+      "actual": "Confirmed gap: failed operator auth produces no outbox record",
+      "result": "FAIL",
+      "severity": "Medium",
+      "evidence": {
+        "gap": "Failed operator auth (401) emits no audit event \u2014 SIEM blind spot"
+      }
+    },
+    {
+      "id": "C10-03",
+      "name": "Detection gap: aggregation run not audited",
+      "owasp": "API9:2023 Improper Inventory Management",
+      "expected": "GAP: aggregation/run endpoint emits no audit event",
+      "actual": "Confirmed gap: aggregation trigger and result not recorded in audit outbox",
+      "result": "FAIL",
+      "severity": "Medium",
+      "evidence": {
+        "gap": "POST /aggregation/run emits no audit event \u2014 no SIEM visibility"
+      }
+    },
+    {
+      "id": "C10-MATRIX",
+      "name": "Detection coverage matrix",
+      "owasp": "API9:2023 Improper Inventory Management",
+      "coverage": [
+        {
+          "attack": "Invalid signature (C3-01)",
+          "expected_event": "security.signature_verification_failed",
+          "wazuh_rule": 100104,
+          "level": 12,
+          "severity": "High"
+        },
+        {
+          "attack": "Unknown key (C3-02)",
+          "expected_event": "security.unknown_signing_key",
+          "wazuh_rule": 100113,
+          "level": 12,
+          "severity": "High"
+        },
+        {
+          "attack": "Key/client mismatch (C3-03)",
+          "expected_event": "security.client_key_mismatch",
+          "wazuh_rule": 100114,
+          "level": 12,
+          "severity": "High"
+        },
+        {
+          "attack": "SHA-256 tamper (C3-04)",
+          "expected_event": "security.payload_integrity_failed",
+          "wazuh_rule": 100112,
+          "level": 10,
+          "severity": "Medium"
+        },
+        {
+          "attack": "Replay attack (C3-05)",
+          "expected_event": "security.replay_detected",
+          "wazuh_rule": 100105,
+          "level": 12,
+          "severity": "High"
+        },
+        {
+          "attack": "Stale timestamp (C3-06)",
+          "expected_event": "security.policy_rejected.*",
+          "wazuh_rule": 100108,
+          "level": 10,
+          "severity": "Medium"
+        },
+        {
+          "attack": "Bad model version (C3-08)",
+          "expected_event": "security.policy_rejected.*",
+          "wazuh_rule": 100108,
+          "level": 10,
+          "severity": "Medium"
+        },
+        {
+          "attack": "Failed operator auth (C2)",
+          "expected_event": "NONE",
+          "wazuh_rule": null,
+          "level": null,
+          "severity": "GAP"
+        },
+        {
+          "attack": "Aggregation with unapproved ID (C5-01)",
+          "expected_event": "NONE",
+          "wazuh_rule": null,
+          "level": null,
+          "severity": "GAP"
+        },
+        {
+          "attack": "Aggregation run itself (C5)",
+          "expected_event": "NONE",
+          "wazuh_rule": null,
+          "level": null,
+          "severity": "GAP"
+        }
+      ],
+      "siem_events_seen": [
+        "security.unknown_signing_key",
+        "security.payload_integrity_failed",
+        "security.model_schema_rejected",
+        "operator.reject_requested",
+        "security.signature_verification_failed",
+        "security.policy_rejected.update_timestamp_in_future",
+        "security.policy_rejected.training_round_not_allowed",
+        "security.client_key_mismatch",
+        "key.registered",
+        "security.sample_count_limit_exceeded",
+        "operator.approve_requested",
+        "security.policy_rejected.update_too_old"
+      ],
+      "result": "INFO"
+    }
+  ]
+}

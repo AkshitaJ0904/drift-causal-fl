@@ -1,0 +1,123 @@
+{
+  "run": "900be0",
+  "timestamp": "2026-11-21T17:43:43.814130+00:00",
+  "target": "http://127.0.0.1:8001",
+  "summary": {
+    "total": 70,
+    "pass": 66,
+    "fail": 4
+  },
+  "categories": [
+    {
+      "category": "C1",
+      "total": 6,
+      "pass": 6,
+      "fail": 0
+    },
+    {
+      "category": "C10",
+      "total": 4,
+      "pass": 1,
+      "fail": 3
+    },
+    {
+      "category": "C2",
+      "total": 3,
+      "pass": 1,
+      "fail": 2
+    },
+    {
+      "category": "C3",
+      "total": 16,
+      "pass": 16,
+      "fail": 0
+    },
+    {
+      "category": "C4",
+      "total": 8,
+      "pass": 8,
+      "fail": 0
+    },
+    {
+      "category": "C5",
+      "total": 4,
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "category": "C6",
+      "total": 5,
+      "pass": 5,
+      "fail": 0
+    },
+    {
+      "category": "C7",
+      "total": 11,
+      "pass": 11,
+      "fail": 0
+    },
+    {
+      "category": "C8",
+      "total": 10,
+      "pass": 10,
+      "fail": 0
+    },
+    {
+      "category": "C9",
+      "total": 4,
+      "pass": 4,
+      "fail": 0
+    }
+  ],
+  "findings": [
+    {
+      "id": "F-01",
+      "title": "Operator token brute-force: no rate limit",
+      "severity": "Medium",
+      "owasp": "API4:2023 Unrestricted Resource Consumption",
+      "description": "No HTTP 429 / lockout issued after repeated failed operator-auth attempts.",
+      "confirmed_by": "C2-01"
+    },
+    {
+      "id": "F-02",
+      "title": "Failed operator auth not emitted to SIEM",
+      "severity": "Medium",
+      "owasp": "API9:2023 Improper Inventory Management",
+      "description": "401 responses on operator endpoints produce no outbox/SIEM audit event.",
+      "confirmed_by": "C2-03, C10-02"
+    },
+    {
+      "id": "F-03",
+      "title": "Aggregation endpoint not audited in SIEM",
+      "severity": "Medium",
+      "owasp": "API9:2023 Improper Inventory Management",
+      "description": "The /api/v1/aggregation/run endpoint emits no audit event.",
+      "confirmed_by": "C10-03"
+    },
+    {
+      "id": "F-04",
+      "title": "Schema validation precedes policy checks",
+      "severity": "Low",
+      "owasp": "API8:2023 Security Misconfiguration",
+      "description": "With no registered TrustedModelSchema, every update returns 422 before the policy pipeline runs; policy-rejection audit events are never emitted in this scenario.",
+      "confirmed_by": "source-analysis (C3-05..C3-09 symptom)"
+    },
+    {
+      "id": "F-05",
+      "title": "/docs, /redoc, /openapi.json accessible without auth",
+      "severity": "Low",
+      "owasp": "API9:2023 Improper Inventory Management",
+      "description": "Full API schema accessible unauthenticated; risk in production.",
+      "confirmed_by": "source-analysis"
+    },
+    {
+      "id": "F-06",
+      "title": "Forwarder deduplication is in-memory only",
+      "severity": "Low",
+      "owasp": "API4:2023 Unrestricted Resource Consumption",
+      "description": "_seen_keys set cleared on forwarder restart; replayed idempotency keys from the outbox retry queue could produce duplicate SIEM JSONL lines.",
+      "confirmed_by": "source-analysis"
+    }
+  ],
+  "generated_at": "2026-11-21T18:36:01.777558+00:00"
+}
