@@ -11,6 +11,7 @@ import AuditOutbox from './pages/AuditOutbox'
 import Aggregation from './pages/Aggregation'
 import DetectionConfig from './pages/DetectionConfig'
 import HealthMonitor from './pages/HealthMonitor'
+import SecurityEvents from './pages/SecurityEvents'
 
 export type PageId =
   | 'dashboard'
@@ -21,6 +22,7 @@ export type PageId =
   | 'aggregation'
   | 'detection'
   | 'health'
+  | 'security-events'
 
 export default function App() {
   const auth = useAuth()
@@ -44,7 +46,7 @@ export default function App() {
   const renderPage = () => {
     switch (page) {
       case 'dashboard':
-        return <Dashboard token={auth.token!} />
+        return <Dashboard token={auth.token!} onNavigate={(p) => setPage(p as PageId)} />
       case 'approvals':
         return <Approvals token={auth.token!} />
       case 'trusted-keys':
@@ -59,6 +61,8 @@ export default function App() {
         return <DetectionConfig token={auth.token!} />
       case 'health':
         return <HealthMonitor token={auth.token!} />
+      case 'security-events':
+        return <SecurityEvents token={auth.token!} />
     }
   }
 

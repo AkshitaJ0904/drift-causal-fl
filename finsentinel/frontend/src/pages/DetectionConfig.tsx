@@ -1,5 +1,6 @@
 import { api, type DashboardResponse } from '../api/client'
 import { useApi } from '../hooks/useApi'
+import Explain from '../components/Explain'
 
 interface Props {
   token: string
@@ -11,12 +12,14 @@ const RULE_BASED_THRESHOLDS = [
     description: 'Maximum weight L2 norm',
     unit: 'float ≥ 0',
     note: 'Flag updates with unusually large weight magnitudes.',
+    explain: 'l2_norm' as const,
   },
   {
     envVar: 'FINSENTINEL_MAX_UPDATE_L2_NORM',
     description: 'Maximum update L2 norm',
     unit: 'float ≥ 0',
     note: 'Flag updates that change weights by an unusually large amount.',
+    explain: 'l2_norm' as const,
   },
   {
     envVar: 'FINSENTINEL_MAX_WEIGHT_ABS_MEAN',
@@ -68,7 +71,7 @@ export default function DetectionConfig({ token }: Props) {
         <div>
           <div className="section-title">Detection Configuration</div>
           <div className="section-desc">
-            Anomaly detection layers for FL update screening
+            Thresholds and policies that govern how the gateway scores and blocks suspicious FL updates. Layer 1 uses deterministic rule checks; Layer 2 (Isolation Forest) is planned.
           </div>
         </div>
         <button className="btn" onClick={refresh}>↻ Refresh</button>
@@ -116,7 +119,7 @@ export default function DetectionConfig({ token }: Props) {
               return (
                 <tr key={row.envVar}>
                   <td className="mono" style={{ fontSize: 11 }}>{row.envVar}</td>
-                  <td>{row.description}</td>
+                  <td style={{ display: 'flex', alignItems: 'center', gap: 4 }}>{row.description}{'explain' in row && row.explain && <Explain term={row.explain} />}</td>
                   <td className="mono text-muted">{row.unit}</td>
                   <td>
                     {loading

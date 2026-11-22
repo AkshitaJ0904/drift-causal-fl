@@ -1,5 +1,6 @@
 import { api, type DashboardResponse } from '../api/client'
 import { useApi } from '../hooks/useApi'
+import Explain from '../components/Explain'
 
 interface Props {
   token: string
@@ -22,7 +23,7 @@ export default function AuditOutbox({ token }: Props) {
         <div>
           <div className="section-title">Audit Outbox</div>
           <div className="section-desc">
-            Durable outbox for forwarding audit events to external systems
+            Every security decision is written here before being forwarded to the SIEM. Dead-lettered events are ones the forwarder could not deliver after 10 attempts — they need manual investigation.
           </div>
         </div>
         <button className="btn" onClick={refresh}>↻ Refresh</button>
@@ -40,7 +41,7 @@ export default function AuditOutbox({ token }: Props) {
 
       <div className="stat-grid">
         <div className="stat-card">
-          <div className="stat-label">Pending Events</div>
+          <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>Pending Events <Explain term="outbox" /></div>
           <div
             className="stat-value"
             style={outbox?.pending_count ? { color: 'var(--accent-amber)' } : undefined}
@@ -51,7 +52,7 @@ export default function AuditOutbox({ token }: Props) {
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-label">Dead-lettered</div>
+          <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>Dead-lettered <Explain term="dead_letter" /></div>
           <div
             className="stat-value"
             style={hasDeadLetters ? { color: 'var(--accent-red)' } : undefined}

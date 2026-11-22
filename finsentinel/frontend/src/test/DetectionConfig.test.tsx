@@ -104,7 +104,7 @@ describe('DetectionConfig', () => {
   it('shows isolation forest section', () => {
     mockedUseApi.mockReturnValue(makeUseApi({ data: baseDashboard }))
     render(<DetectionConfig token="test-token" />)
-    expect(screen.getByText(/Isolation Forest/)).toBeInTheDocument()
+    expect(screen.getAllByText(/Isolation Forest/).length).toBeGreaterThan(0)
   })
 
   it('shows supplementary detection disclaimer', () => {

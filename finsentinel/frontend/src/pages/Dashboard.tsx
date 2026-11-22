@@ -1,6 +1,39 @@
 import { useEffect, useState } from 'react'
 import { api, type DashboardResponse } from '../api/client'
 import { useApi } from '../hooks/useApi'
+import Explain from '../components/Explain'
+import type { GlossaryKey } from '../glossary'
+
+function SecurityPostureStrip({ token }: { token: string }) {
+  const { data } = useApi(() => api.getVaptReport(token), [token])
+  if (!data?.available || !data.summary) return null
+  const s = data.summary
+  const passRate = Math.round((s.pass / s.total) * 100)
+  const statusColor = passRate >= 90 ? 'var(--accent-cyan)' : passRate >= 70 ? 'var(--accent-amber)' : 'var(--accent-red)'
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 20,
+        padding: '10px 16px',
+        background: 'var(--surface)',
+        borderRadius: 6,
+        marginBottom: 16,
+        fontSize: 12,
+        flexWrap: 'wrap',
+      }}
+    >
+      <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Security Posture</span>
+      <span style={{ color: statusColor, fontWeight: 700 }}>{passRate}% pass rate</span>
+      <span style={{ color: 'var(--text-muted)' }}>{s.total} tests · {s.pass} pass · {s.fail} fail</span>
+      {data.findings && data.findings.length > 0 && (
+        <span style={{ color: 'var(--accent-red)' }}>{data.findings.length} open finding{data.findings.length !== 1 ? 's' : ''}</span>
+      )}
+      <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>Run {data.run ?? '—'}</span>
+    </div>
+  )
+}
 
 interface Props {
   token: string
@@ -11,15 +44,20 @@ function StatCard({
   value,
   accent,
   accentColor,
+  explain,
 }: {
   label: string
   value: string | number
   accent?: boolean
   accentColor?: string
+  explain?: GlossaryKey
 }) {
   return (
     <div className="stat-card">
-      <div className="stat-label">{label}</div>
+      <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        {label}
+        {explain && <Explain term={explain} />}
+      </div>
       <div
         className="stat-value"
         style={accentColor ? { color: accentColor } : accent ? { color: 'var(--accent-cyan)' } : undefined}
@@ -51,7 +89,86 @@ function StatusRow({
   )
 }
 
-export default function Dashboard({ token }: Props) {
+const WAZUH_URL = (import.meta.env.VITE_WAZUH_URL as string | undefined) ?? 'https://localhost'
+
+interface WorkflowStepProps {
+  step: number
+  label: string
+  note: string
+  badge?: string | number | null
+  page?: string
+  onNav?: (page: string) => void
+}
+
+function WorkflowStep({ step, label, note, badge, page, onNav }: WorkflowStepProps) {
+  const content = (
+    <div
+      onClick={page && onNav ? () => onNav(page) : undefined}
+      style={{
+        textAlign: 'center',
+        padding: '10px 12px',
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius)',
+        cursor: page && onNav ? 'pointer' : 'default',
+        minWidth: 110,
+        transition: 'border-color 0.15s',
+      }}
+      onMouseEnter={e => { if (page && onNav) (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--accent-cyan)' }}
+      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border)' }}
+    >
+      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.08em', marginBottom: 2 }}>STEP {step}</div>
+      <div style={{ fontWeight: 600, fontSize: 12.5, color: 'var(--text-primary)', marginBottom: 2 }}>{label}</div>
+      {badge != null && (
+        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent-cyan)', lineHeight: 1 }}>{badge}</div>
+      )}
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{note}</div>
+    </div>
+  )
+  return content
+}
+
+function WorkflowStrip({ data, onNav }: { data: DashboardResponse; onNav?: (page: string) => void }) {
+  const steps: WorkflowStepProps[] = [
+    { step: 1, label: 'Client submits', note: 'Signed NPZ update', page: 'trusted-keys', badge: data.registries.trusted_key_count },
+    { step: 2, label: 'Gateway checks', note: 'Sig · schema · score', page: 'detection' },
+    { step: 3, label: 'Approval queue', note: 'Operator decision', page: 'approvals', badge: data.approvals.pending_count },
+    { step: 4, label: 'Aggregation', note: 'FedAvg weighting', page: 'aggregation' },
+    { step: 5, label: 'Audit outbox', note: 'Durable event log', page: 'outbox', badge: data.outbox.pending_count },
+    { step: 6, label: 'SIEM / Wazuh', note: 'Threat correlation' },
+  ]
+
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 10 }}>
+        How FinSentinel works
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 0, flexWrap: 'wrap' }}>
+        {steps.map((s, idx) => (
+          <>
+            <WorkflowStep key={s.step} {...s} onNav={onNav} />
+            {idx < steps.length - 1 && (
+              <div key={`arr-${idx}`} style={{ color: 'var(--text-muted)', fontSize: 16, padding: '0 4px', flexShrink: 0 }}>→</div>
+            )}
+          </>
+        ))}
+        <a
+          href={WAZUH_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn"
+          style={{ marginLeft: 12, fontSize: 12 }}
+        >
+          Open Wazuh ↗
+        </a>
+      </div>
+    </div>
+  )
+}
+
+interface Props { token: string; onNavigate?: (page: string) => void }
+
+export default function Dashboard({ token, onNavigate }: Props) {
   const { data, loading, error, refresh } = useApi<DashboardResponse>(
     () => api.getDashboard(token),
     [token],
@@ -92,6 +209,10 @@ export default function Dashboard({ token }: Props) {
 
   return (
     <div>
+      {data && <WorkflowStrip data={data} onNav={onNavigate} />}
+
+      <SecurityPostureStrip token={token} />
+
       {/* Critical alerts */}
       {outbox.alert && (
         <div className="alert alert-warn">
@@ -112,11 +233,13 @@ export default function Dashboard({ token }: Props) {
           label="Outbox Pending"
           value={outbox.pending_count ?? '?'}
           accentColor={outbox.pending_count && outbox.pending_count > 0 ? 'var(--accent-amber)' : undefined}
+          explain="outbox"
         />
         <StatCard
           label="Dead-lettered"
           value={outbox.dead_letter_count ?? '?'}
           accentColor={hasDeadLetters ? 'var(--accent-red)' : undefined}
+          explain="dead_letter"
         />
         <StatCard label="Trusted Keys"   value={registries.trusted_key_count ?? '?'} />
         <StatCard label="Model Schemas"  value={registries.model_schema_count ?? '?'} />
@@ -225,6 +348,15 @@ export default function Dashboard({ token }: Props) {
             Last updated {lastUpdated.toLocaleTimeString()} · auto-refreshes every 30 s
           </span>
         )}
+        <a
+          href={(import.meta.env.VITE_WAZUH_URL as string | undefined) ?? 'https://localhost'}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn"
+          style={{ fontSize: 12 }}
+        >
+          Open Wazuh ↗
+        </a>
         <button className="btn" onClick={refresh}>↻ Refresh</button>
       </div>
     </div>

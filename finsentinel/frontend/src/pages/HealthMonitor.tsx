@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, type HealthResponse, type HealthAlertsResponse, type HealthMetricsResponse } from '../api/client'
 import { useApi } from '../hooks/useApi'
+import Explain from '../components/Explain'
 
 interface Props {
   token: string
@@ -41,7 +42,7 @@ export default function HealthMonitor({ token }: Props) {
         <div>
           <div className="section-title">Health Monitor</div>
           <div className="section-desc">
-            Live service health — liveness, alerts and metrics
+            Live health of the FinSentinel backend. A "degraded" status usually means undelivered audit events in the outbox — check the Audit Outbox page for dead-lettered events.
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -96,7 +97,7 @@ export default function HealthMonitor({ token }: Props) {
         {!metricsApi.loading && metricsApi.data && (
           <>
             <div className="stat-card">
-              <div className="stat-label">Outbox Pending</div>
+              <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>Outbox Pending <Explain term="outbox" /></div>
               <div
                 className="stat-value"
                 style={metricsApi.data.outbox.pending_count ? { color: 'var(--accent-amber)' } : undefined}
@@ -105,7 +106,7 @@ export default function HealthMonitor({ token }: Props) {
               </div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Dead-lettered</div>
+              <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>Dead-lettered <Explain term="dead_letter" /></div>
               <div
                 className="stat-value"
                 style={metricsApi.data.outbox.dead_letter_count ? { color: 'var(--accent-red)' } : undefined}

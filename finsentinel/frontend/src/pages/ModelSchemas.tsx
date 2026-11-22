@@ -19,7 +19,7 @@ export default function ModelSchemas({ token }: Props) {
         <div>
           <div className="section-title">Model Schema Registry</div>
           <div className="section-desc">
-            Trusted model architectures accepted for FL updates
+            Declares the expected tensor names, shapes, and dtypes for each model version. Updates that do not match are rejected at ingestion (rule 100107) before any ML processing.
           </div>
         </div>
         <button className="btn" onClick={refresh}>↻ Refresh</button>

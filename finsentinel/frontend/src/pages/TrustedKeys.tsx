@@ -19,7 +19,7 @@ export default function TrustedKeys({ token }: Props) {
         <div>
           <div className="section-title">Trusted Key Registry</div>
           <div className="section-desc">
-            Ed25519 public keys trusted for update signing
+            Ed25519 public keys that the gateway trusts for signing FL model updates. An update signed by an unregistered key is blocked (rule 100113).
           </div>
         </div>
         <button className="btn" onClick={refresh}>↻ Refresh</button>

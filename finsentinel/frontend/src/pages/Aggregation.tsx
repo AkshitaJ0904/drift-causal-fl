@@ -31,7 +31,7 @@ export default function Aggregation(_props: Props) {
         <div>
           <div className="section-title">Aggregation Control</div>
           <div className="section-desc">
-            Federated aggregation API — programmatic access only
+            Combines approved client updates into a new global model using federated averaging. Requires full NPZ-encoded payloads — call this endpoint from the FL coordinator, not from a browser.
           </div>
         </div>
       </div>

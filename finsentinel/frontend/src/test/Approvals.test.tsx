@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import Approvals from '../pages/Approvals'
 import { useApi } from '../hooks/useApi'
@@ -181,5 +181,63 @@ describe('Approvals', () => {
     render(<Approvals token="test-token" />)
     await userEvent.click(screen.getByRole('button', { name: '↻ Refresh' }))
     expect(refresh).toHaveBeenCalled()
+  })
+})
+
+describe('Approvals XSS output escaping', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('renders img-tag XSS payload in client_id as escaped text, not a DOM element', () => {
+    const xssPayload = '<img src=x onerror=alert(1)>'
+    const xssRecord: ApprovalRecord = { ...sampleRecord, client_id: xssPayload }
+    mockedUseApi.mockReturnValue(makeUseApi({ data: { pending: [xssRecord] } }))
+    const { container } = render(<Approvals token="test-token" />)
+    // React JSX auto-escaping: payload visible as literal text
+    expect(screen.getByText(xssPayload)).toBeInTheDocument()
+    // No img element injected into the DOM
+    expect(container.querySelectorAll('img')).toHaveLength(0)
+  })
+
+  it('renders script-tag XSS payload in update_id as escaped text, not a DOM element', () => {
+    const xssPayload = '<script>alert("xss")</script>'
+    const xssRecord: ApprovalRecord = { ...sampleRecord, update_id: xssPayload }
+    mockedUseApi.mockReturnValue(makeUseApi({ data: { pending: [xssRecord] } }))
+    const { container } = render(<Approvals token="test-token" />)
+    expect(screen.getByText(xssPayload)).toBeInTheDocument()
+    // No script element injected into the DOM
+    expect(container.querySelectorAll('script')).toHaveLength(0)
+  })
+})
+
+describe('Approvals — expandable rows', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('row expands on click and shows detail panel', () => {
+    mockedUseApi.mockReturnValue(makeUseApi({ data: { pending: [sampleRecord] } }))
+    const { container } = render(<Approvals token="test-token" />)
+    const rows = container.querySelectorAll('tbody tr')
+    expect(rows.length).toBeGreaterThan(0)
+    fireEvent.click(rows[0])
+    expect(screen.getByText(/Why it matters/)).toBeInTheDocument()
+    expect(screen.getByText(/What the system did/)).toBeInTheDocument()
+    expect(screen.getByText(/What you should do/)).toBeInTheDocument()
+  })
+
+  it('action buttons stop propagation — clicking Approve opens panel, not expand', async () => {
+    mockedUseApi.mockReturnValue(makeUseApi({ data: { pending: [sampleRecord] } }))
+    render(<Approvals token="test-token" />)
+    await userEvent.click(screen.getByRole('button', { name: 'Approve' }))
+    // Approval confirmation panel opened
+    expect(screen.getByText(/Confirm Approve/)).toBeInTheDocument()
+    // Expandable detail panel (Why it matters) must NOT be shown
+    expect(screen.queryByText(/Why it matters/)).not.toBeInTheDocument()
+  })
+
+  it('row has aria-expanded=true when expanded', () => {
+    mockedUseApi.mockReturnValue(makeUseApi({ data: { pending: [sampleRecord] } }))
+    const { container } = render(<Approvals token="test-token" />)
+    const rows = container.querySelectorAll('tbody tr')
+    fireEvent.click(rows[0])
+    expect(rows[0].getAttribute('aria-expanded')).toBe('true')
   })
 })

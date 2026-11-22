@@ -75,6 +75,12 @@ export default function Login({ onLogin }: Props) {
               autoComplete="current-password"
               autoFocus
             />
+            <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              Token is read from{' '}
+              <code style={{ fontFamily: 'monospace', background: 'var(--bg-hover)', padding: '1px 4px', borderRadius: 3 }}>
+                %USERPROFILE%\.finsentinel\dev_token.txt
+              </code>
+            </div>
           </div>
 
           <button

@@ -13,21 +13,23 @@ const NAV: NavEntry[] = [
   { id: 'approvals',     label: 'Approvals',        icon: '◎', section: 'Operations'  },
   { id: 'trusted-keys',  label: 'Trusted Keys',     icon: '⌘', section: 'Registry'    },
   { id: 'model-schemas', label: 'Model Schemas',    icon: '▣'                          },
-  { id: 'audit-outbox',  label: 'Audit Outbox',     icon: '◉', section: 'System'      },
-  { id: 'aggregation',   label: 'Aggregation',      icon: '⊕'                          },
-  { id: 'detection',     label: 'Detection',        icon: '◈'                          },
-  { id: 'health',        label: 'Health Monitor',   icon: '◑'                          },
+  { id: 'audit-outbox',     label: 'Audit Outbox',      icon: '◉', section: 'System'   },
+  { id: 'security-events', label: 'Security Center',   icon: '⚑'                       },
+  { id: 'aggregation',     label: 'Aggregation',       icon: '⊕'                       },
+  { id: 'detection',       label: 'Detection',         icon: '◈'                       },
+  { id: 'health',          label: 'Health Monitor',    icon: '◑'                       },
 ]
 
 const PAGE_TITLES: Record<PageId, string> = {
-  'dashboard':     'Operator Dashboard',
-  'approvals':     'Approval Queue',
-  'trusted-keys':  'Trusted Key Registry',
-  'model-schemas': 'Model Schema Registry',
-  'audit-outbox':  'Audit Outbox',
-  'aggregation':   'Aggregation Control',
-  'detection':     'Detection Configuration',
-  'health':        'Health Monitor',
+  'dashboard':        'Operator Dashboard',
+  'approvals':        'Approval Queue',
+  'trusted-keys':     'Trusted Key Registry',
+  'model-schemas':    'Model Schema Registry',
+  'audit-outbox':     'Audit Outbox',
+  'security-events':  'Security Center',
+  'aggregation':      'Aggregation Control',
+  'detection':        'Detection Configuration',
+  'health':           'Health Monitor',
 }
 
 interface Props {

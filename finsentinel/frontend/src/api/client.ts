@@ -122,6 +122,77 @@ export interface DashboardResponse {
   detection?: DashboardDetection
 }
 
+export interface SecurityEvent {
+  timestamp?: string
+  event_type?: string
+  client_id?: string
+  update_id?: string
+  service?: string
+  event_id?: number | null
+  reason?: string
+  rule_id?: string | null
+  level?: number | null
+  severity?: string
+  plain_english?: string
+}
+
+export interface SecurityEventsResponse {
+  events: SecurityEvent[]
+  total: number
+  message: string
+}
+
+export interface DetectionRule {
+  event_type: string
+  rule_id: string
+  level: number
+  severity: string
+  plain_english: string
+  match_type: string
+  why_it_matters?: string
+  what_to_do?: string
+  example?: string
+}
+
+export interface DetectionCatalogResponse {
+  rules: DetectionRule[]
+  total: number
+}
+
+export interface VaptFinding {
+  id: string
+  title: string
+  severity: string
+  owasp: string
+  description: string
+  actual?: string
+}
+
+export interface VaptCategoryCount {
+  category: string
+  total: number
+  pass: number
+  fail: number
+}
+
+export interface VaptSummary {
+  total: number
+  pass: number
+  fail: number
+}
+
+export interface VaptReportResponse {
+  available: boolean
+  message?: string
+  run?: string
+  timestamp?: string
+  target?: string
+  summary?: VaptSummary
+  categories?: VaptCategoryCount[]
+  findings?: VaptFinding[]
+  generated_at?: string
+}
+
 export interface ApprovalRecord {
   update_id: string
   client_id: string
@@ -214,4 +285,13 @@ export const api = {
 
   getHealthMetrics: (token: string) =>
     request<HealthMetricsResponse>('GET', '/health/metrics', token),
+
+  getSecurityEvents: (token: string, limit = 50) =>
+    request<SecurityEventsResponse>('GET', `/security-events?limit=${limit}`, token),
+
+  getDetectionCatalog: (token: string) =>
+    request<DetectionCatalogResponse>('GET', '/security-events/catalog', token),
+
+  getVaptReport: (token: string) =>
+    request<VaptReportResponse>('GET', '/vapt-report', token),
 }

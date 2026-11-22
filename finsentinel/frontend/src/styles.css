@@ -1,41 +1,46 @@
-/* FinSentinel — Dark Intelligence Command Center */
-/* Premium enterprise FL Security & Trust Intelligence Platform */
+/* FinSentinel — Operator Console */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 /* ══════════════════════════════════════════════════════════
-   DESIGN TOKENS
+   DESIGN TOKENS — light theme
 ══════════════════════════════════════════════════════════ */
 :root {
   /* Surfaces */
-  --bg-base:     #0B1220;
-  --bg-sidebar:  #0D1726;
-  --bg-card:     #111F30;
-  --bg-elevated: #17283A;
-  --bg-hover:    #1A2F45;
-  --bg-input:    #0D1A2B;
-  --bg-surface:  var(--bg-elevated);  /* compat */
+  --bg-base:     #F5F7FA;
+  --bg-sidebar:  #1E2D3D;
+  --bg-card:     #FFFFFF;
+  --bg-elevated: #FFFFFF;
+  --bg-hover:    #F0F4F8;
+  --bg-input:    #FFFFFF;
+  --bg-surface:  var(--bg-elevated);
 
   /* Accents */
-  --accent-cyan:   #55C8D6;
-  --accent-amber:  #E5B45F;
-  --accent-teal:   #45B8A5;
-  --accent-red:    #E36C73;
-  --accent-blue:   var(--accent-cyan);  /* compat — maps to primary cyan */
-  --accent-green:  var(--accent-teal);  /* compat */
-  --accent-yellow: var(--accent-amber); /* compat */
-  --accent-orange: var(--accent-amber); /* compat */
+  --accent-cyan:   #2563EB;
+  --accent-amber:  #D97706;
+  --accent-teal:   #0891B2;
+  --accent-red:    #DC2626;
+  --accent-blue:   #2563EB;
+  --accent-green:  #16A34A;
+  --accent-yellow: #D97706;
+  --accent-orange: #EA580C;
+
+  /* Severity (accessible contrast on white) */
+  --sev-low:      #16A34A;
+  --sev-medium:   #D97706;
+  --sev-high:     #DC2626;
+  --sev-critical: #7F1D1D;
 
   /* Text */
-  --text-primary:   #E7EEF7;
-  --text-secondary: #91A4B8;
-  --text-muted:     #4A6070;
+  --text-primary:   #111827;
+  --text-secondary: #374151;
+  --text-muted:     #9CA3AF;
   --text-danger:    var(--accent-red);
 
   /* Borders */
-  --border:        rgba(50, 90, 130, 0.35);
-  --border-accent: rgba(85, 200, 214, 0.25);
-  --border-strong: rgba(50, 90, 130, 0.60);
+  --border:        #E5E7EB;
+  --border-accent: #BFDBFE;
+  --border-strong: #D1D5DB;
 
   /* Layout */
   --sidebar-width: 228px;
@@ -45,13 +50,28 @@
   --radius-lg:     10px;
 
   /* Shadows */
-  --shadow-card:     0 1px 3px rgba(0,0,0,0.4);
-  --shadow-elevated: 0 4px 20px rgba(0,0,0,0.5);
+  --shadow-card:     0 1px 3px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04);
+  --shadow-elevated: 0 4px 16px rgba(0,0,0,0.12);
 
   /* Fonts */
   --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Courier New', monospace;
 }
+
+/* ══════════════════════════════════════════════════════════
+   SIDEBAR + TOPBAR — dark surface needs explicit light text
+══════════════════════════════════════════════════════════ */
+.sidebar .sidebar-title          { color: #E2E8F0; }
+.sidebar .sidebar-title span     { color: #93C5FD; }
+.sidebar .sidebar-subtitle       { color: #64748B; }
+.sidebar .nav-section-label      { color: #64748B; }
+.sidebar .nav-item               { color: #94A3B8; }
+.sidebar .nav-item:hover         { color: #E2E8F0; background: rgba(255,255,255,0.06); }
+.sidebar .nav-item.active        { color: #93C5FD; border-left-color: #93C5FD; background: rgba(147,197,253,0.08); }
+.sidebar .sidebar-status-text    { color: #64748B; }
+.topbar .topbar-title            { color: #E2E8F0; }
+.topbar .topbar-status           { color: #94A3B8; }
+.topbar .topbar-breadcrumb-sep   { color: #64748B; }
 
 /* ══════════════════════════════════════════════════════════
    RESET
@@ -444,12 +464,12 @@ button {
   text-transform: uppercase;
   letter-spacing: 0.07em;
   border-bottom: 1px solid var(--border);
-  background: rgba(11, 18, 32, 0.5);
+  background: var(--bg-hover);
 }
 
 .data-table td {
   padding: 11px 14px;
-  border-bottom: 1px solid rgba(50, 90, 130, 0.18);
+  border-bottom: 1px solid var(--border);
   color: var(--text-secondary);
   vertical-align: middle;
 }
@@ -497,13 +517,13 @@ button {
 .btn-primary {
   background: var(--accent-cyan);
   border-color: var(--accent-cyan);
-  color: #071018;
+  color: #FFFFFF;
   font-weight: 600;
 }
 
 .btn-primary:hover {
-  background: #6DD4E0;
-  border-color: #6DD4E0;
+  background: #1D4ED8;
+  border-color: #1D4ED8;
 }
 
 .btn-danger {
@@ -569,7 +589,7 @@ button {
 
 .form-input:focus {
   border-color: var(--accent-cyan);
-  box-shadow: 0 0 0 3px rgba(85, 200, 214, 0.12);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .form-input::placeholder { color: var(--text-muted); }
@@ -588,10 +608,10 @@ button {
   line-height: 1.55;
 }
 
-.alert-error   { background: rgba(227, 108, 115, 0.09); border: 1px solid rgba(227, 108, 115, 0.3); color: #F0919A; }
-.alert-warn    { background: rgba(229, 180, 95, 0.09);  border: 1px solid rgba(229, 180, 95, 0.3);  color: #EFC07A; }
-.alert-success { background: rgba(69, 184, 165, 0.09);  border: 1px solid rgba(69, 184, 165, 0.3);  color: #5DC9B6; }
-.alert-info    { background: rgba(85, 200, 214, 0.08);  border: 1px solid rgba(85, 200, 214, 0.25); color: var(--accent-cyan); }
+.alert-error   { background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; }
+.alert-warn    { background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; }
+.alert-success { background: #F0FDF4; border: 1px solid #BBF7D0; color: #065F46; }
+.alert-info    { background: #EFF6FF; border: 1px solid #BFDBFE; color: #1E40AF; }
 
 /* ══════════════════════════════════════════════════════════
    SPINNER / LOADING
@@ -758,7 +778,7 @@ button {
   align-items: center;
   gap: 10px;
   padding: 7px 0;
-  border-bottom: 1px solid rgba(50,90,130,0.15);
+  border-bottom: 1px solid var(--border);
 }
 
 .status-row:last-child {
